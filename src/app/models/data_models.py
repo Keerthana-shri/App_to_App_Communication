@@ -1,6 +1,7 @@
 from sqlalchemy import Column, String, Text, Integer, Boolean, Enum, ForeignKey, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship, declarative_base
+from datetime import datetime
 import uuid
 import enum
 
@@ -41,8 +42,8 @@ class User(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     providers = relationship("Provider", back_populates="user")
@@ -67,8 +68,8 @@ class Application(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     consumer_api_keys = relationship("APIKey", foreign_keys="[APIKey.consumer_application_id]", back_populates="consumer_application")
@@ -96,8 +97,8 @@ class Provider(Base):
     secret_hash = Column(Text, nullable=False)
     name = Column(String, nullable=False)
     comment = Column(Text)
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     user = relationship("User", back_populates="providers")
@@ -118,7 +119,7 @@ class APIKey(Base):
         api_key_owner (UUID): Foreign key linking to the user who owns the API key.
         is_active (Boolean): Indicates if the API key is active.
         created_at (DateTime): Timestamp when the API key was created.
-        expires_at (DateTime): Expiration timestamp for the API key.
+        expires_at (DateTime): Expiration timestamp for the API key (nullable).
         comment (Text): Optional comment about the API key.
         consumer_application (relationship): Relationship to the consumer application.
         provider_application (relationship): Relationship to the provider application.
@@ -135,8 +136,8 @@ class APIKey(Base):
     permissions = Column(Enum(PermissionEnum), nullable=False)
     api_key_owner = Column(UUID(as_uuid=True), ForeignKey('user.id'))
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime)
-    expires_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=True)
     comment = Column(Text)
 
     # Relationships
@@ -177,8 +178,8 @@ class Log(Base):
     response_code = Column(Integer)
     retry_count = Column(Integer, default=0)
     http_method = Column(String, nullable=False)
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     provider_application = relationship("Application", foreign_keys=[provider_application_id], back_populates="provider_logs")
