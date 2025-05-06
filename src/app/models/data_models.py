@@ -1,6 +1,6 @@
 import enum
 import uuid
-
+ 
 from sqlalchemy import (
     Boolean,
     Column,
@@ -14,33 +14,33 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.sql import func
-
+ 
 Base = declarative_base()
-
-
+ 
+ 
 class PermissionEnum(enum.Enum):
     """
     Enum representing the types of permissions available for API keys.
     """
-
+ 
     Read = "Read"
     Write = "Write"
     Both = "Both"
-
-
+ 
+ 
 class StatusEnum(enum.Enum):
     """
     Enum representing the status of a log entry.
     """
-
+ 
     Success = "Success"
     Failed = "Failed"
-
-
+ 
+ 
 class User(Base):
     """
     Represents a user in the system.
-
+ 
     Attributes:
         id (UUID): Unique identifier for the user.
         name (str): Name of the user.
@@ -49,9 +49,9 @@ class User(Base):
         updated_at (datetime): Timestamp when the user was last updated.
         api_keys (list): List of API keys owned by the user.
     """
-
+ 
     __tablename__ = "user"
-
+ 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
@@ -59,66 +59,33 @@ class User(Base):
     updated_at = Column(
         DateTime(timezone=True), default=func.now(), onupdate=func.now()
     )
-
-    # Relationships
-    api_keys = relationship(
-        "APIKey", back_populates="owner", cascade="all, delete-orphan"
-    )
-
-
+ 
+ 
 class Application(Base):
     """
     Represents an application in the system.
-
+ 
     Attributes:
         id (UUID): Unique identifier for the application.
         name (str): Name of the application.
         created_at (datetime): Timestamp when the application was created.
         updated_at (datetime): Timestamp when the application was last updated.
-        consumer_api_keys (list): API keys where the application is a consumer.
-        provider_api_keys (list): API keys where the application is a provider.
-        consumer_logs (list): Logs where the application is a consumer.
-        provider_logs (list): Logs where the application is a provider.
-        provider (Provider): The provider associated with the application.
     """
-
+ 
     __tablename__ = "application"
-
+ 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), default=func.now())
     updated_at = Column(
         DateTime(timezone=True), default=func.now(), onupdate=func.now()
     )
-
-    # Relationships
-    consumer_api_keys = relationship(
-        "APIKey",
-        foreign_keys="[APIKey.consumer_application_id]",
-        back_populates="consumer_application",
-    )
-    provider_api_keys = relationship(
-        "APIKey",
-        foreign_keys="[APIKey.provider_application_id]",
-        back_populates="provider_application",
-    )
-    consumer_logs = relationship(
-        "Log",
-        foreign_keys="[Log.consumer_application_id]",
-        back_populates="consumer_application",
-    )
-    provider_logs = relationship(
-        "Log",
-        foreign_keys="[Log.provider_application_id]",
-        back_populates="provider_application",
-    )
-    provider = relationship("Provider", back_populates="application", uselist=False)
-
-
+ 
+ 
 class Provider(Base):
     """
     Represents a provider in the system.
-
+ 
     Attributes:
         id (UUID): Unique identifier for the provider.
         secret_hash (str): Secret hash for the provider.
@@ -127,15 +94,10 @@ class Provider(Base):
         application_id (UUID): Foreign key to the associated application.
         created_at (datetime): Timestamp when the provider was created.
         updated_at (datetime): Timestamp when the provider was last updated.
-        application (Application): The associated application.
-        consumer_api_keys (list): API keys where the provider is a consumer.
-        provider_api_keys (list): API keys where the provider is a provider.
-        consumer_logs (list): Logs where the provider is a consumer.
-        provider_logs (list): Logs where the provider is a provider.
     """
-
+ 
     __tablename__ = "provider"
-
+ 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     secret_hash = Column(Text, nullable=False)
     name = Column(String, nullable=False)
@@ -147,35 +109,13 @@ class Provider(Base):
     updated_at = Column(
         DateTime(timezone=True), default=func.now(), onupdate=func.now()
     )
-
-    # Relationships
-    application = relationship("Application", back_populates="provider", uselist=False)
-    consumer_api_keys = relationship(
-        "APIKey",
-        foreign_keys="[APIKey.consumer_application_id]",
-        back_populates="consumer_provider",
-    )
-    provider_api_keys = relationship(
-        "APIKey",
-        foreign_keys="[APIKey.provider_application_id]",
-        back_populates="provider_provider",
-    )
-    consumer_logs = relationship(
-        "Log",
-        foreign_keys="[Log.consumer_application_id]",
-        back_populates="consumer_provider",
-    )
-    provider_logs = relationship(
-        "Log",
-        foreign_keys="[Log.provider_application_id]",
-        back_populates="provider_provider",
-    )
-
-
+ 
+ 
+ 
 class APIKey(Base):
     """
     Represents an API key in the system.
-
+ 
     Attributes:
         id (UUID): Unique identifier for the API key.
         consumer_application_id (UUID): Foreign key to the consumer application.
@@ -189,15 +129,10 @@ class APIKey(Base):
         created_at (datetime): Timestamp when the API key was created.
         expires_at (datetime): Expiration timestamp for the API key.
         comment (str): Additional comments about the API key.
-        consumer_application (Provider): The consumer application.
-        provider_application (Provider): The provider application.
-        owner (User): The owner of the API key.
-        consumer_provider (Provider): The consumer provider.
-        provider_provider (Provider): The provider provider.
     """
-
+ 
     __tablename__ = "api_key"
-
+ 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     consumer_application_id = Column(UUID(as_uuid=True), ForeignKey("provider.id"))
     consumer_name = Column(String, nullable=False)
@@ -210,37 +145,11 @@ class APIKey(Base):
     created_at = Column(DateTime(timezone=True), default=func.now())
     expires_at = Column(DateTime(timezone=True), nullable=True)
     comment = Column(Text)
-
-    # Relationships
-    consumer_application = relationship(
-        "Provider",
-        foreign_keys=[consumer_application_id],
-        back_populates="consumer_api_keys",
-    )
-    provider_application = relationship(
-        "Provider",
-        foreign_keys=[provider_application_id],
-        back_populates="provider_api_keys",
-    )
-    owner = relationship(
-        "User", foreign_keys=[api_key_owner], back_populates="api_keys"
-    )
-    consumer_provider = relationship(
-        "Provider",
-        foreign_keys=[consumer_application_id],
-        back_populates="consumer_api_keys",
-    )
-    provider_provider = relationship(
-        "Provider",
-        foreign_keys=[provider_application_id],
-        back_populates="provider_api_keys",
-    )
-
-
+ 
 class Log(Base):
     """
     Represents a log entry in the system.
-
+ 
     Attributes:
         id (UUID): Unique identifier for the log entry.
         provider_application_id (UUID): Foreign key to the provider application.
@@ -254,12 +163,10 @@ class Log(Base):
         http_method (str): HTTP method used for the request.
         created_at (datetime): Timestamp when the log entry was created.
         updated_at (datetime): Timestamp when the log entry was last updated.
-        provider_application (Application): The provider application.
-        consumer_application (Application): The consumer application.
     """
-
+ 
     __tablename__ = "log"
-
+ 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     provider_application_id = Column(UUID(as_uuid=True), ForeignKey("provider.id"))
     consumer_application_id = Column(UUID(as_uuid=True), ForeignKey("provider.id"))
@@ -273,16 +180,4 @@ class Log(Base):
     created_at = Column(DateTime(timezone=True), default=func.now())
     updated_at = Column(
         DateTime(timezone=True), default=func.now(), onupdate=func.now()
-    )
-
-    # Relationships
-    provider_application = relationship(
-        "Application",
-        foreign_keys=[provider_application_id],
-        back_populates="provider_logs",
-    )
-    consumer_application = relationship(
-        "Application",
-        foreign_keys=[consumer_application_id],
-        back_populates="consumer_logs",
     )
