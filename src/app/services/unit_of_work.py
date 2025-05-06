@@ -4,6 +4,9 @@ from src.app.config.database import get_db
 from src.app.repositories.application_repository import ApplicationRepository
 from src.app.repositories.user_repository import UserRepository
 
+from ..repositories.api_key_repository import APIKeyRepository
+from ..repositories.provider_repository import ProviderRepository
+
 
 class BaseUnitOfWork(ABC):
     """A base class implementing the Unit of Work pattern for managing database transactions."""
@@ -65,4 +68,14 @@ class UnitOfWork(BaseUnitOfWork):
         super().__enter__()
         self.user = UserRepository(session=self.session)
         self.application = ApplicationRepository(session=self.session)
+
+
+class APIKeyUnitOfWork(BaseUnitOfWork):
+    """Unit of Work for managing APIKey-related database transactions."""
+
+    def __enter__(self):
+        super().__enter__()
+        self.api_key = APIKeyRepository(session=self.session)
+        self.application = ApplicationRepository(session=self.session)
+        self.provider = ProviderRepository(session=self.session)
         return self
