@@ -2,6 +2,10 @@ from abc import ABC
 
 from src.app.config.database import get_db
 
+from ..repositories.api_key_repository import APIKeyRepository
+from ..repositories.application_repository import ApplicationRepository
+from ..repositories.provider_repository import ProviderRepository
+
 
 class BaseUnitOfWork(ABC):
     """A base class implementing the Unit of Work pattern for managing database transactions."""
@@ -49,3 +53,14 @@ class BaseUnitOfWork(ABC):
         Roll back the current transaction, reverting uncommitted changes.
         """
         self.session.rollback()
+
+
+class APIKeyUnitOfWork(BaseUnitOfWork):
+    """Unit of Work for managing APIKey-related database transactions."""
+
+    def __enter__(self):
+        super().__enter__()
+        self.api_key = APIKeyRepository(session=self.session)
+        self.application = ApplicationRepository(session=self.session)
+        self.provider = ProviderRepository(session=self.session)
+        return self

@@ -3,8 +3,8 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from src.app.repositories.base_repository import BaseRepository
 from src.app.models.data_models import Provider
+from src.app.repositories.base_repository import BaseRepository
 
 
 class ProviderRepository(BaseRepository[Provider]):
@@ -31,20 +31,24 @@ class ProviderRepository(BaseRepository[Provider]):
 
         return query.all()
 
-    def get(self, id: UUID) -> Optional[Provider]:
-        return self.session.query(Provider).filter(Provider.id == id).first()
+    def get(self, application_id: UUID) -> Provider:
+        return (
+            self.session.query(Provider)
+            .filter_by(application_id=application_id)
+            .first()
+        )
 
     def add(self, **kwargs: object) -> None:
         provider = Provider(**kwargs)
         self.session.add(provider)
 
-    def update(self, id: UUID, **kwargs: object) -> None:
-        provider = self.get(id=id)
+    def update(self, application_id: UUID, **kwargs: object) -> None:
+        provider = self.get(application_id=application_id)
         if provider:
             for key, value in kwargs.items():
                 setattr(provider, key, value)
 
-    def delete(self, id: UUID) -> None:
-        provider = self.get(id=id)
+    def delete(self, application_id: UUID) -> None:
+        provider = self.get(application_id=application_id)
         if provider:
             self.session.delete(provider)

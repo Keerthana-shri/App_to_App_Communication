@@ -133,10 +133,10 @@ class APIKey(Base):
     __tablename__ = "api_key"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    consumer_application_id = Column(UUID(as_uuid=True), ForeignKey("provider.id"))
+    consumer_application_id = Column(UUID(as_uuid=True), ForeignKey("application.id"))
     consumer_name = Column(String, nullable=False)
     api_key = Column(String, unique=True, nullable=False)
-    provider_application_id = Column(UUID(as_uuid=True), ForeignKey("provider.id"))
+    provider_application_id = Column(UUID(as_uuid=True), ForeignKey("application.id"))
     provider_name = Column(String, nullable=False)
     permissions = Column(Enum(PermissionEnum), nullable=False)
     api_key_owner = Column(UUID(as_uuid=True), ForeignKey("user.id"))
