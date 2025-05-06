@@ -58,8 +58,10 @@ class User(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime(timezone=True), default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), default=func.now(), onupdate=func.now()
+    )
 
     # Relationships
     providers = relationship("Provider", back_populates="user")
@@ -86,8 +88,10 @@ class Application(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime(timezone=True), default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), default=func.now(), onupdate=func.now()
+    )
 
     # Relationships
     consumer_api_keys = relationship(
@@ -135,8 +139,10 @@ class Provider(Base):
     secret_hash = Column(Text, nullable=False)
     name = Column(String, nullable=False)
     comment = Column(Text)
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime(timezone=True), default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), default=func.now(), onupdate=func.now()
+    )
 
     # Relationships
     user = relationship("User", back_populates="providers")
@@ -176,8 +182,10 @@ class APIKey(Base):
     permissions = Column(Enum(PermissionEnum), nullable=False)
     api_key_owner = Column(UUID(as_uuid=True), ForeignKey("user.id"))
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=func.now())
-    expires_at = Column(DateTime, nullable=True)  # Nullable expiration date
+    created_at = Column(DateTime(timezone=True), default=func.now())
+    expires_at = Column(
+        DateTime(timezone=True), nullable=True
+    )  # Nullable expiration date
     comment = Column(Text)
 
     # Relationships
@@ -228,8 +236,10 @@ class Log(Base):
     response_code = Column(Integer)
     retry_count = Column(Integer, default=0)
     http_method = Column(String, nullable=False)
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime(timezone=True), default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), default=func.now(), onupdate=func.now()
+    )
 
     # Relationships
     provider_application = relationship(
