@@ -38,21 +38,14 @@ class StatusEnum(enum.Enum):
     Failed = "Failed"
 
 
-# User Table
+# ... [imports remain unchanged]
+
+Base = declarative_base()
+
+# Enums remain unchanged...
+
+
 class User(Base):
-    """
-    Represents a user entity in the database.
-
-    Attributes:
-        id (UUID): Unique identifier for the user.
-        name (String): Name of the user.
-        email (String): Email address of the user.
-        created_at (DateTime): Timestamp when the user was created.
-        updated_at (DateTime): Timestamp when the user was last updated.
-        providers (relationship): Relationship to the Provider model.
-        api_keys (relationship): Relationship to the APIKey model.
-    """
-
     __tablename__ = "user"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -64,26 +57,12 @@ class User(Base):
     )
 
     # Relationships
-    providers = relationship("Provider", back_populates="user")
-    api_keys = relationship("APIKey", back_populates="user")
+    api_keys = relationship(
+        "APIKey", back_populates="owner", cascade="all, delete-orphan"
+    )
 
 
-# Application Table
 class Application(Base):
-    """
-    Represents an application entity in the database.
-
-    Attributes:
-        id (UUID): Unique identifier for the application.
-        name (String): Name of the application.
-        created_at (DateTime): Timestamp when the application was created.
-        updated_at (DateTime): Timestamp when the application was last updated.
-        consumer_api_keys (relationship): Relationship to API keys where the application is a consumer.
-        provider_api_keys (relationship): Relationship to API keys where the application is a provider.
-        consumer_logs (relationship): Relationship to logs where the application is a consumer.
-        provider_logs (relationship): Relationship to logs where the application is a provider.
-    """
-
     __tablename__ = "application"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -114,121 +93,97 @@ class Application(Base):
         foreign_keys="[Log.provider_application_id]",
         back_populates="provider_application",
     )
+    provider = relationship("Provider", back_populates="application", uselist=False)
 
 
-# Provider Table
 class Provider(Base):
-    """
-    Represents a provider entity in the database.
-
-    Attributes:
-        id (UUID): Unique identifier for the provider, linked to a user.
-        secret_hash (Text): Hashed secret for the provider.
-        name (String): Name of the provider.
-        comment (Text): Optional comment about the provider.
-        created_at (DateTime): Timestamp when the provider was created.
-        updated_at (DateTime): Timestamp when the provider was last updated.
-        user (relationship): Relationship to the User model.
-    """
-
     __tablename__ = "provider"
 
-    id = Column(
-        UUID(as_uuid=True), ForeignKey("user.id"), primary_key=True, default=uuid.uuid4
-    )
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     secret_hash = Column(Text, nullable=False)
     name = Column(String, nullable=False)
     comment = Column(Text)
+    application_id = Column(
+        UUID(as_uuid=True), ForeignKey("application.id"), nullable=False
+    )
     created_at = Column(DateTime(timezone=True), default=func.now())
     updated_at = Column(
         DateTime(timezone=True), default=func.now(), onupdate=func.now()
     )
 
     # Relationships
-    user = relationship("User", back_populates="providers")
+
+    application = relationship("Application", back_populates="provider", uselist=False)
+    consumer_api_keys = relationship(
+        "APIKey",
+        foreign_keys="[APIKey.consumer_application_id]",
+        back_populates="consumer_provider",
+    )
+    provider_api_keys = relationship(
+        "APIKey",
+        foreign_keys="[APIKey.provider_application_id]",
+        back_populates="provider_provider",
+    )
+    consumer_logs = relationship(
+        "Log",
+        foreign_keys="[Log.consumer_application_id]",
+        back_populates="consumer_provider",
+    )
+    provider_logs = relationship(
+        "Log",
+        foreign_keys="[Log.provider_application_id]",
+        back_populates="provider_provider",
+    )
 
 
-# API Key Table
 class APIKey(Base):
-    """
-    Represents an API key entity in the database.
-
-    Attributes:
-        id (UUID): Unique identifier for the API key.
-        consumer_application_id (UUID): Foreign key linking to the consumer application.
-        consumer_name (String): Name of the consumer using the API key.
-        api_key (String): The API key string.
-        provider_application_id (UUID): Foreign key linking to the provider application.
-        provider_name (String): Name of the provider associated with the API key.
-        permissions (Enum): Permissions associated with the API key.
-        api_key_owner (UUID): Foreign key linking to the user who owns the API key.
-        is_active (Boolean): Indicates if the API key is active.
-        created_at (DateTime): Timestamp when the API key was created.
-        expires_at (DateTime): Expiration timestamp for the API key (nullable).
-        comment (Text): Optional comment about the API key.
-        consumer_application (relationship): Relationship to the consumer application.
-        provider_application (relationship): Relationship to the provider application.
-        user (relationship): Relationship to the User model.
-    """
-
     __tablename__ = "api_key"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    consumer_application_id = Column(UUID(as_uuid=True), ForeignKey("application.id"))
+    consumer_application_id = Column(UUID(as_uuid=True), ForeignKey("provider.id"))
     consumer_name = Column(String, nullable=False)
     api_key = Column(String, unique=True, nullable=False)
-    provider_application_id = Column(UUID(as_uuid=True), ForeignKey("application.id"))
+    provider_application_id = Column(UUID(as_uuid=True), ForeignKey("provider.id"))
     provider_name = Column(String, nullable=False)
     permissions = Column(Enum(PermissionEnum), nullable=False)
     api_key_owner = Column(UUID(as_uuid=True), ForeignKey("user.id"))
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), default=func.now())
-    expires_at = Column(
-        DateTime(timezone=True), nullable=True
-    )  # Nullable expiration date
+    expires_at = Column(DateTime(timezone=True), nullable=True)
     comment = Column(Text)
 
     # Relationships
     consumer_application = relationship(
-        "Application",
+        "Provider",
         foreign_keys=[consumer_application_id],
         back_populates="consumer_api_keys",
     )
     provider_application = relationship(
-        "Application",
+        "Provider",
         foreign_keys=[provider_application_id],
         back_populates="provider_api_keys",
     )
-    user = relationship("User", back_populates="api_keys")
+    owner = relationship(
+        "User", foreign_keys=[api_key_owner], back_populates="api_keys"
+    )
+    consumer_provider = relationship(
+        "Provider",
+        foreign_keys=[consumer_application_id],
+        back_populates="consumer_api_keys",
+    )
+    provider_provider = relationship(
+        "Provider",
+        foreign_keys=[provider_application_id],
+        back_populates="provider_api_keys",
+    )
 
 
-# Log Table
 class Log(Base):
-    """
-    Represents a log entry in the database.
-
-    Attributes:
-        id (UUID): Unique identifier for the log entry.
-        provider_application_id (UUID): Foreign key linking to the provider application.
-        consumer_application_id (UUID): Foreign key linking to the consumer application.
-        request_url (String): URL of the request.
-        request_data (Text): Data sent in the request.
-        status (Enum): Status of the log entry (e.g., Success or Failed).
-        response_data (Text): Data received in the response.
-        response_code (Integer): HTTP response code.
-        retry_count (Integer): Number of retries for the request.
-        http_method (String): HTTP method used for the request.
-        created_at (DateTime): Timestamp when the log entry was created.
-        updated_at (DateTime): Timestamp when the log entry was last updated.
-        provider_application (relationship): Relationship to the provider application.
-        consumer_application (relationship): Relationship to the consumer application.
-    """
-
     __tablename__ = "log"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    provider_application_id = Column(UUID(as_uuid=True), ForeignKey("application.id"))
-    consumer_application_id = Column(UUID(as_uuid=True), ForeignKey("application.id"))
+    provider_application_id = Column(UUID(as_uuid=True), ForeignKey("provider.id"))
+    consumer_application_id = Column(UUID(as_uuid=True), ForeignKey("provider.id"))
     request_url = Column(String, nullable=False)
     request_data = Column(Text)
     status = Column(Enum(StatusEnum), nullable=False)
