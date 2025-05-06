@@ -18,7 +18,6 @@ from sqlalchemy.sql import func
 Base = declarative_base()
 
 
-# Enums for Permissions and Log Status
 class PermissionEnum(enum.Enum):
     """
     Enum representing the types of permissions available for API keys.
@@ -38,14 +37,19 @@ class StatusEnum(enum.Enum):
     Failed = "Failed"
 
 
-# ... [imports remain unchanged]
-
-Base = declarative_base()
-
-# Enums remain unchanged...
-
-
 class User(Base):
+    """
+    Represents a user in the system.
+
+    Attributes:
+        id (UUID): Unique identifier for the user.
+        name (str): Name of the user.
+        email (str): Email address of the user.
+        created_at (datetime): Timestamp when the user was created.
+        updated_at (datetime): Timestamp when the user was last updated.
+        api_keys (list): List of API keys owned by the user.
+    """
+
     __tablename__ = "user"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -63,6 +67,21 @@ class User(Base):
 
 
 class Application(Base):
+    """
+    Represents an application in the system.
+
+    Attributes:
+        id (UUID): Unique identifier for the application.
+        name (str): Name of the application.
+        created_at (datetime): Timestamp when the application was created.
+        updated_at (datetime): Timestamp when the application was last updated.
+        consumer_api_keys (list): API keys where the application is a consumer.
+        provider_api_keys (list): API keys where the application is a provider.
+        consumer_logs (list): Logs where the application is a consumer.
+        provider_logs (list): Logs where the application is a provider.
+        provider (Provider): The provider associated with the application.
+    """
+
     __tablename__ = "application"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -97,6 +116,24 @@ class Application(Base):
 
 
 class Provider(Base):
+    """
+    Represents a provider in the system.
+
+    Attributes:
+        id (UUID): Unique identifier for the provider.
+        secret_hash (str): Secret hash for the provider.
+        name (str): Name of the provider.
+        comment (str): Additional comments about the provider.
+        application_id (UUID): Foreign key to the associated application.
+        created_at (datetime): Timestamp when the provider was created.
+        updated_at (datetime): Timestamp when the provider was last updated.
+        application (Application): The associated application.
+        consumer_api_keys (list): API keys where the provider is a consumer.
+        provider_api_keys (list): API keys where the provider is a provider.
+        consumer_logs (list): Logs where the provider is a consumer.
+        provider_logs (list): Logs where the provider is a provider.
+    """
+
     __tablename__ = "provider"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -112,7 +149,6 @@ class Provider(Base):
     )
 
     # Relationships
-
     application = relationship("Application", back_populates="provider", uselist=False)
     consumer_api_keys = relationship(
         "APIKey",
@@ -137,6 +173,29 @@ class Provider(Base):
 
 
 class APIKey(Base):
+    """
+    Represents an API key in the system.
+
+    Attributes:
+        id (UUID): Unique identifier for the API key.
+        consumer_application_id (UUID): Foreign key to the consumer application.
+        consumer_name (str): Name of the consumer.
+        api_key (str): The API key value.
+        provider_application_id (UUID): Foreign key to the provider application.
+        provider_name (str): Name of the provider.
+        permissions (PermissionEnum): Permissions associated with the API key.
+        api_key_owner (UUID): Foreign key to the owner of the API key.
+        is_active (bool): Whether the API key is active.
+        created_at (datetime): Timestamp when the API key was created.
+        expires_at (datetime): Expiration timestamp for the API key.
+        comment (str): Additional comments about the API key.
+        consumer_application (Provider): The consumer application.
+        provider_application (Provider): The provider application.
+        owner (User): The owner of the API key.
+        consumer_provider (Provider): The consumer provider.
+        provider_provider (Provider): The provider provider.
+    """
+
     __tablename__ = "api_key"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -179,6 +238,26 @@ class APIKey(Base):
 
 
 class Log(Base):
+    """
+    Represents a log entry in the system.
+
+    Attributes:
+        id (UUID): Unique identifier for the log entry.
+        provider_application_id (UUID): Foreign key to the provider application.
+        consumer_application_id (UUID): Foreign key to the consumer application.
+        request_url (str): URL of the request.
+        request_data (str): Data sent in the request.
+        status (StatusEnum): Status of the log entry.
+        response_data (str): Data received in the response.
+        response_code (int): HTTP response code.
+        retry_count (int): Number of retries for the request.
+        http_method (str): HTTP method used for the request.
+        created_at (datetime): Timestamp when the log entry was created.
+        updated_at (datetime): Timestamp when the log entry was last updated.
+        provider_application (Application): The provider application.
+        consumer_application (Application): The consumer application.
+    """
+
     __tablename__ = "log"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
