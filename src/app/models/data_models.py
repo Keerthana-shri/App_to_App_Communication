@@ -1,27 +1,42 @@
-from sqlalchemy import Column, String, Text, Integer, Boolean, Enum, ForeignKey, DateTime
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship, declarative_base
-from datetime import datetime
-import uuid
 import enum
+import uuid
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.sql import func
 
 Base = declarative_base()
+
 
 # Enums for Permissions and Log Status
 class PermissionEnum(enum.Enum):
     """
     Enum representing the types of permissions available for API keys.
     """
+
     Read = "Read"
     Write = "Write"
     Both = "Both"
+
 
 class StatusEnum(enum.Enum):
     """
     Enum representing the status of a log entry.
     """
+
     Success = "Success"
     Failed = "Failed"
+
 
 # User Table
 class User(Base):
@@ -37,17 +52,19 @@ class User(Base):
         providers (relationship): Relationship to the Provider model.
         api_keys (relationship): Relationship to the APIKey model.
     """
-    __tablename__ = 'user'
+
+    __tablename__ = "user"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
     # Relationships
     providers = relationship("Provider", back_populates="user")
     api_keys = relationship("APIKey", back_populates="user")
+
 
 # Application Table
 class Application(Base):
@@ -64,18 +81,36 @@ class Application(Base):
         consumer_logs (relationship): Relationship to logs where the application is a consumer.
         provider_logs (relationship): Relationship to logs where the application is a provider.
     """
-    __tablename__ = 'application'
+
+    __tablename__ = "application"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
     # Relationships
-    consumer_api_keys = relationship("APIKey", foreign_keys="[APIKey.consumer_application_id]", back_populates="consumer_application")
-    provider_api_keys = relationship("APIKey", foreign_keys="[APIKey.provider_application_id]", back_populates="provider_application")
-    consumer_logs = relationship("Log", foreign_keys="[Log.consumer_application_id]", back_populates="consumer_application")
-    provider_logs = relationship("Log", foreign_keys="[Log.provider_application_id]", back_populates="provider_application")
+    consumer_api_keys = relationship(
+        "APIKey",
+        foreign_keys="[APIKey.consumer_application_id]",
+        back_populates="consumer_application",
+    )
+    provider_api_keys = relationship(
+        "APIKey",
+        foreign_keys="[APIKey.provider_application_id]",
+        back_populates="provider_application",
+    )
+    consumer_logs = relationship(
+        "Log",
+        foreign_keys="[Log.consumer_application_id]",
+        back_populates="consumer_application",
+    )
+    provider_logs = relationship(
+        "Log",
+        foreign_keys="[Log.provider_application_id]",
+        back_populates="provider_application",
+    )
+
 
 # Provider Table
 class Provider(Base):
@@ -91,17 +126,21 @@ class Provider(Base):
         updated_at (DateTime): Timestamp when the provider was last updated.
         user (relationship): Relationship to the User model.
     """
-    __tablename__ = 'provider'
 
-    id = Column(UUID(as_uuid=True), ForeignKey('user.id'), primary_key=True, default=uuid.uuid4)
+    __tablename__ = "provider"
+
+    id = Column(
+        UUID(as_uuid=True), ForeignKey("user.id"), primary_key=True, default=uuid.uuid4
+    )
     secret_hash = Column(Text, nullable=False)
     name = Column(String, nullable=False)
     comment = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
     # Relationships
     user = relationship("User", back_populates="providers")
+
 
 # API Key Table
 class APIKey(Base):
@@ -125,25 +164,35 @@ class APIKey(Base):
         provider_application (relationship): Relationship to the provider application.
         user (relationship): Relationship to the User model.
     """
-    __tablename__ = 'api_key'
+
+    __tablename__ = "api_key"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    consumer_application_id = Column(UUID(as_uuid=True), ForeignKey('application.id'))
+    consumer_application_id = Column(UUID(as_uuid=True), ForeignKey("application.id"))
     consumer_name = Column(String, nullable=False)
     api_key = Column(String, unique=True, nullable=False)
-    provider_application_id = Column(UUID(as_uuid=True), ForeignKey('application.id'))
+    provider_application_id = Column(UUID(as_uuid=True), ForeignKey("application.id"))
     provider_name = Column(String, nullable=False)
     permissions = Column(Enum(PermissionEnum), nullable=False)
-    api_key_owner = Column(UUID(as_uuid=True), ForeignKey('user.id'))
+    api_key_owner = Column(UUID(as_uuid=True), ForeignKey("user.id"))
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    expires_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=func.now())
+    expires_at = Column(DateTime, nullable=True)  # Nullable expiration date
     comment = Column(Text)
 
     # Relationships
-    consumer_application = relationship("Application", foreign_keys=[consumer_application_id], back_populates="consumer_api_keys")
-    provider_application = relationship("Application", foreign_keys=[provider_application_id], back_populates="provider_api_keys")
+    consumer_application = relationship(
+        "Application",
+        foreign_keys=[consumer_application_id],
+        back_populates="consumer_api_keys",
+    )
+    provider_application = relationship(
+        "Application",
+        foreign_keys=[provider_application_id],
+        back_populates="provider_api_keys",
+    )
     user = relationship("User", back_populates="api_keys")
+
 
 # Log Table
 class Log(Base):
@@ -166,11 +215,12 @@ class Log(Base):
         provider_application (relationship): Relationship to the provider application.
         consumer_application (relationship): Relationship to the consumer application.
     """
-    __tablename__ = 'log'
+
+    __tablename__ = "log"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    provider_application_id = Column(UUID(as_uuid=True), ForeignKey('application.id'))
-    consumer_application_id = Column(UUID(as_uuid=True), ForeignKey('application.id'))
+    provider_application_id = Column(UUID(as_uuid=True), ForeignKey("application.id"))
+    consumer_application_id = Column(UUID(as_uuid=True), ForeignKey("application.id"))
     request_url = Column(String, nullable=False)
     request_data = Column(Text)
     status = Column(Enum(StatusEnum), nullable=False)
@@ -178,9 +228,17 @@ class Log(Base):
     response_code = Column(Integer)
     retry_count = Column(Integer, default=0)
     http_method = Column(String, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
     # Relationships
-    provider_application = relationship("Application", foreign_keys=[provider_application_id], back_populates="provider_logs")
-    consumer_application = relationship("Application", foreign_keys=[consumer_application_id], back_populates="consumer_logs")
+    provider_application = relationship(
+        "Application",
+        foreign_keys=[provider_application_id],
+        back_populates="provider_logs",
+    )
+    consumer_application = relationship(
+        "Application",
+        foreign_keys=[consumer_application_id],
+        back_populates="consumer_logs",
+    )
