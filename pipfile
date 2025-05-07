@@ -12,6 +12,8 @@ python-dotenv = "*"
 psycopg2-binary = "*"
 alembic = "*"
 pre-commit = "*"
+passlib = "*"
+bcrypt = "*"
 
 [dev-packages]
 
