@@ -124,4 +124,8 @@ def downgrade() -> None:
     op.drop_table("provider")
     op.drop_table("user")
     op.drop_table("application")
+
+    # Drop Enums
+    op.execute("DROP TYPE permissionenum")
+    op.execute("DROP TYPE statusenum")
     # ### end Alembic commands ###
