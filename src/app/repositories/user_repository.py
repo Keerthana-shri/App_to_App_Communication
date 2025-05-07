@@ -97,6 +97,7 @@ class UserRepository(BaseRepository[User]):
 
         Parameters:
             id (UUID): The unique identifier of the user.
+
         """
         user = self.get(id=id)
         if user:
