@@ -1,2 +1,7 @@
 .env
 **/__pycache__/
+
+alembic/versions/4f7235ef721b_change_foreign_key_constraint_from_.py
+.gitignore
+alembic/versions/78a9e107f468_initial_migration.py
+alembic/versions/6bdee9e11316_updated_relationships.py
