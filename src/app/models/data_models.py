@@ -1,13 +1,11 @@
-import enum
 import uuid
-
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum, Text
+from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy.sql import func
+import enum
 
 Base = declarative_base()
-
 
 class AppType(enum.Enum):
     """
@@ -15,10 +13,8 @@ class AppType(enum.Enum):
     - provider: Application providing services.
     - consumer: Application consuming services.
     """
-
     provider = "provider"
     consumer = "consumer"
-
 
 class StatusEnum(enum.Enum):
     """
@@ -27,11 +23,9 @@ class StatusEnum(enum.Enum):
     - inactive: Entity is inactive.
     - revoked: Entity access has been revoked.
     """
-
     active = "active"
     inactive = "inactive"
     revoked = "revoked"
-
 
 class PermissionEnum(enum.Enum):
     """
@@ -40,11 +34,9 @@ class PermissionEnum(enum.Enum):
     - write: Write access.
     - both: For Read-Write both access.
     """
-
     read = "read"
     write = "write"
     both = "both"
-
 
 class User(Base):
     """
@@ -71,6 +63,8 @@ class User(Base):
     applications = relationship("Application", back_populates="owner")
     api_keys = relationship("ApiKey", back_populates="owner")
 
+    applications = relationship("Application", back_populates="owner")
+    api_keys = relationship("ApiKey", back_populates="owner")
 
 class Application(Base):
     """
@@ -123,6 +117,7 @@ class Application(Base):
         passive_deletes=True,
     )
 
+    owner = relationship("User", back_populates="applications")
 
 class ApiKey(Base):
     """
@@ -174,6 +169,9 @@ class ApiKey(Base):
     )
     owner = relationship("User", back_populates="api_keys")
 
+    provider_app = relationship("Application", foreign_keys=[provider_id], back_populates="provided_keys")
+    consumer_app = relationship("Application", foreign_keys=[consumer_id], back_populates="consumed_keys")
+    owner = relationship("User", back_populates="api_keys")
 
 class Log(Base):
     """
