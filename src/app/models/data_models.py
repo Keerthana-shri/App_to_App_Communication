@@ -156,7 +156,9 @@ class ApiKey(Base):
     )
     status = Column(Enum(StatusEnum), default=StatusEnum.active)
     api_key = Column(String, unique=True, nullable=False)
-    api_key_owner_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
+    api_key_owner_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
     permissions = Column(Enum(PermissionEnum), nullable=False)
 
     created_at = Column(DateTime(timezone=True), default=func.now())
