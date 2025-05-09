@@ -12,7 +12,7 @@ psycopg2-binary = "*"
 alembic = "*"
 pre-commit = "*"
 passlib = "*"
-bcrypt = "*"
+bcrypt = "==4.0.1"
 
 [dev-packages]
 
