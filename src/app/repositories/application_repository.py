@@ -51,10 +51,8 @@ class ApplicationRepository(BaseRepository[Application]):
     def get(self, id: UUID) -> Optional[Application]:
         """
         Retrieve a single application by its unique identifier.
-
         Parameters:
             id (UUID): The unique identifier of the application.
-
         Returns:
             Application | None: The application record if found, else None.
         """
