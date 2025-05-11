@@ -4,7 +4,7 @@ from src.app.config.database import get_db
 
 from ..repositories.api_key_repository import APIKeyRepository
 from ..repositories.application_repository import ApplicationRepository
-from ..repositories.provider_repository import ProviderRepository
+from ..repositories.user_repository import UserRepository
 
 
 class BaseUnitOfWork(ABC):
@@ -23,7 +23,7 @@ class BaseUnitOfWork(ABC):
         """
         Enter the runtime context, initializing a new database session.
         """
-        self.session = next(self.session_factory())
+        self.session = self.session_factory()
         self.session.autoflush = True
         return self
 
@@ -62,5 +62,5 @@ class APIKeyUnitOfWork(BaseUnitOfWork):
         super().__enter__()
         self.api_key = APIKeyRepository(session=self.session)
         self.application = ApplicationRepository(session=self.session)
-        self.provider = ProviderRepository(session=self.session)
+        self.user = UserRepository(session=self.session)
         return self
