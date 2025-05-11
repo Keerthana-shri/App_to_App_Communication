@@ -21,7 +21,6 @@ class ApplicationRepository(BaseRepository[Application]):
     ) -> List[Application]:
         """
         Retrieve all applications or filter them by name and type.
-
         Parameters:
             name (str, optional): Filter applications by name.
             type (str, optional): Filter applications by type.
@@ -29,7 +28,6 @@ class ApplicationRepository(BaseRepository[Application]):
                 - Expected values: "name", "status", "created_at", "updated_at"
                 - Defaults to "created_at"
             order (str, optional): Sorting order ("asc" or "desc"). Defaults to "asc".
-
         Returns:
             List[Application]: A list of application records.
         """
@@ -74,7 +72,6 @@ class ApplicationRepository(BaseRepository[Application]):
     def update(self, id: UUID, **kwargs: object) -> None:
         """
         Update an existing application record.
-
         Parameters:
             id (UUID): The unique identifier of the application to update.
             kwargs (object): Key-value pairs of attributes to update.
@@ -87,7 +84,6 @@ class ApplicationRepository(BaseRepository[Application]):
     def delete(self, id: UUID) -> None:
         """
         Delete an application by ID.
-
         Parameters:
             id (UUID): The unique identifier of the application.
         """

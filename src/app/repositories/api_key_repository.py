@@ -1,18 +1,14 @@
-from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import func
-from sqlalchemy.orm import Session
-
 from src.app.repositories.base_repository import BaseRepository
-from src.app.models.data_models import APIKey, PermissionEnum
+from src.app.models.data_models import ApiKey, PermissionEnum
 
 
-class APIKeyRepository(BaseRepository[APIKey]):
+class APIKeyRepository(BaseRepository[ApiKey]):
     """
-    A repository class for APIKey model.
-    It provides methods to perform CRUD operations on APIKey data.
+    A repository class for ApiKey model.
+    It provides methods to perform CRUD operations on ApiKey data.
     """
 
     def get_all(
@@ -23,36 +19,87 @@ class APIKeyRepository(BaseRepository[APIKey]):
         permissions: Optional[PermissionEnum] = None,
         page: int = 1,
         page_size: int = 10,
-    ) -> List[APIKey]:
-        query = self.session.query(APIKey)
+    ) -> List[ApiKey]:
+        """
+        Retrieve a paginated list of API keys based on the provided filters.
+
+        Args:
+            consumer_application_id (Optional[UUID]): Filter by consumer application ID.
+            provider_application_id (Optional[UUID]): Filter by provider application ID.
+            is_active (Optional[bool]): Filter by active status.
+            permissions (Optional[PermissionEnum]): Filter by permissions.
+            page (int): The page number for pagination (default is 1).
+            page_size (int): The number of items per page (default is 10).
+
+        Returns:
+            List[ApiKey]: A list of ApiKey objects matching the filters.
+        """
+        query = self.session.query(ApiKey)
 
         if consumer_application_id:
-            query = query.filter(APIKey.consumer_application_id == consumer_application_id)
+            query = query.filter(ApiKey.consumer_application_id == consumer_application_id)
         if provider_application_id:
-            query = query.filter(APIKey.provider_application_id == provider_application_id)
+            query = query.filter(ApiKey.provider_application_id == provider_application_id)
         if is_active is not None:
-            query = query.filter(APIKey.is_active == is_active)
+            query = query.filter(ApiKey.is_active == is_active)
         if permissions:
-            query = query.filter(APIKey.permissions == permissions)
+            query = query.filter(ApiKey.permissions == permissions)
 
         query = query.offset((page - 1) * page_size).limit(page_size)
 
         return query.all()
 
-    def get(self, id: UUID) -> Optional[APIKey]:
-        return self.session.query(APIKey).filter(APIKey.id == id).first()
+    def get(self, id: UUID) -> Optional[ApiKey]:
+        """
+        Retrieve a single API key by its ID.
+
+        Args:
+            id (UUID): The unique identifier of the API key.
+
+        Returns:
+            Optional[ApiKey]: The ApiKey object if found, otherwise None.
+        """
+        return self.session.query(ApiKey).filter(ApiKey.id == id).first()
 
     def add(self, **kwargs: object) -> None:
-        api_key = APIKey(**kwargs)
+        """
+        Add a new API key to the database.
+
+        Args:
+            **kwargs (object): The attributes of the API key to be created.
+
+        Returns:
+            None
+        """
+        api_key = ApiKey(**kwargs)
         self.session.add(api_key)
 
     def update(self, id: UUID, **kwargs: object) -> None:
+        """
+        Update an existing API key with new attributes.
+
+        Args:
+            id (UUID): The unique identifier of the API key to update.
+            **kwargs (object): The attributes to update.
+
+        Returns:
+            None
+        """
         api_key = self.get(id=id)
         if api_key:
             for key, value in kwargs.items():
                 setattr(api_key, key, value)
 
     def delete(self, id: UUID) -> None:
+        """
+        Delete an API key from the database.
+
+        Args:
+            id (UUID): The unique identifier of the API key to delete.
+
+        Returns:
+            None
+        """
         api_key = self.get(id=id)
         if api_key:
             self.session.delete(api_key)
