@@ -133,6 +133,7 @@ class ApiKey(Base):
         provider_id (UUID): Foreign key referencing the provider application.
         consumer_id (UUID): Foreign key referencing the consumer application.
         status (StatusEnum): Status of the API key.
+        api_key (str): The actual API key (unique).
         api_key_owner_id (UUID): Foreign key referencing the owner (User).
         permissions (PermissionEnum): Permissions associated with the API key.
         created_at (datetime): Timestamp when the API key was created.
@@ -154,9 +155,8 @@ class ApiKey(Base):
         UUID(as_uuid=True), ForeignKey("applications.id"), nullable=False
     )
     status = Column(Enum(StatusEnum), default=StatusEnum.active)
-    api_key_owner_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
-    )
+    api_key = Column(String, unique=True, nullable=False)
+    api_key_owner_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
     permissions = Column(Enum(PermissionEnum), nullable=False)
 
     created_at = Column(DateTime(timezone=True), default=func.now())
