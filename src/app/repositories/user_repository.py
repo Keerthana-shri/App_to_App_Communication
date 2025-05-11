@@ -47,10 +47,9 @@ class UserRepository(BaseRepository[User]):
     ) -> list[User]:
         """
         Retrieve all users or filter by ID,name,time of creation
-
+        
         Parameters:
             name (str, optional): Filter by user name.
-            sort_by (str, optional): Column name to sort by.
             order (str, optional): Sorting order ('asc' or 'desc'). Defaults to 'asc'.
 
         Returns:
@@ -72,7 +71,7 @@ class UserRepository(BaseRepository[User]):
     def add(self, **kwargs: object) -> None:
         """
         Add a new user to the database.
-
+        
         Parameters:
             kwargs: Key value pairs of the attributes to update
         """
@@ -82,7 +81,7 @@ class UserRepository(BaseRepository[User]):
     def update(self, id: UUID, **kwargs: object) -> None:
         """
         Update user details.
-
+        
         Parameters:
             id (UUID): The unique identifier of the user to update.
             **kwargs: Key-value pairs of attributes to update.
@@ -98,9 +97,7 @@ class UserRepository(BaseRepository[User]):
 
         Parameters:
             id (UUID): The unique identifier of the user.
-
         """
-        user = self.get(id)
-
+        user = self.get(id=id)
         if user:
             self.session.delete(user)

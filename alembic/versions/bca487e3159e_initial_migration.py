@@ -1,9 +1,7 @@
 """Initial Migration
-
 Revision ID: bca487e3159e
 Revises:
 Create Date: 2025-05-08 17:40:47.971556
-
 """
 from typing import Sequence, Union
 
