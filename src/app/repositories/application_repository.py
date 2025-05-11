@@ -29,7 +29,6 @@ class ApplicationRepository(BaseRepository[Application]):
                 - Expected values: "name", "status", "created_at", "updated_at"
                 - Defaults to "created_at"
             order (str, optional): Sorting order ("asc" or "desc"). Defaults to "asc".
-
         Returns:
             List[Application]: A list of application records.
         """
