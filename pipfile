@@ -8,10 +8,10 @@ fastapi = "*"
 uvicorn = "*"
 sqlalchemy = "*"
 typing = "*"
-python-dotenv = "*"
 psycopg2-binary = "*"
 alembic = "*"
 pre-commit = "*"
+python-dotenv = "*"
 
 [dev-packages]
 

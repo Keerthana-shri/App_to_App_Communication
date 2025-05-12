@@ -3,6 +3,7 @@ from uuid import UUID, uuid4
 
 from cryptography.fernet import Fernet
 
+from src.app.config.settings import ENCRYPTION_KEY
 from src.app.models.data_models import ApiKey, PermissionEnum, StatusEnum
 from src.app.schemas.api_key_schema import (
     APIKeyDetailResponse,
