@@ -19,7 +19,7 @@ from src.app.services.unit_of_work import APIKeyUnitOfWork
 router = APIRouter()
 
 
-@router.post("/api/v1/consumer/api-key", response_model=APIKeyResponse)
+@router.post("/consumer/api-key", response_model=APIKeyResponse)
 def generate_api_key(request: APIKeyCreate, db: Session = Depends(get_db)):
     service = APIKeyService(
         uow=APIKeyUnitOfWork(session_factory=lambda: db),
