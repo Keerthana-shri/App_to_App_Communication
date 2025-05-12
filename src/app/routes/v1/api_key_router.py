@@ -8,6 +8,7 @@ from src.app.config.database import get_db
 from src.app.schemas.api_key_schema import (
     APIKeyCreate,
     APIKeyDetailResponse,
+    APIKeyListResponse,
     APIKeyResponse,
     APIKeyUpdate,
 )
@@ -39,18 +40,21 @@ def generate_api_key(request: APIKeyCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/api/v1/consumer/api-keys", response_model=dict)
+@router.get("/consumer/{consumer_id}/api-keys", response_model=APIKeyListResponse)
 def get_all_api_keys(
-    page: int = Query(1), page_size: int = Query(10), db: Session = Depends(get_db)
+    consumer_id: UUID,
+    page: int = Query(1),
+    page_size: int = Query(10),
+    db: Session = Depends(get_db),
 ):
     service = APIKeyService(uow=APIKeyUnitOfWork(session_factory=lambda: db))
-    api_keys, total = service.get_all_api_keys(page=page, page_size=page_size)
-    return {"total": total, "api_keys": api_keys}
+    response = service.get_all_api_keys(
+        consumer_id=consumer_id, page=page, page_size=page_size
+    )
+    return response
 
 
-@router.get(
-    "/api/v1/consumer/api-key/{api_key_id}", response_model=APIKeyDetailResponse
-)
+@router.get("/consumer/api-key/{api_key_id}", response_model=APIKeyDetailResponse)
 def get_api_key(api_key_id: UUID, db: Session = Depends(get_db)):
     service = APIKeyService(uow=APIKeyUnitOfWork(session_factory=lambda: db))
     api_key = service.get_api_key(api_key_id)
@@ -59,7 +63,7 @@ def get_api_key(api_key_id: UUID, db: Session = Depends(get_db)):
     return api_key
 
 
-@router.patch("/api/v1/consumer/api-key/{api_key_id}")
+@router.patch("/consumer/api-key/{api_key_id}")
 def update_api_key(
     api_key_id: UUID, request: APIKeyUpdate, db: Session = Depends(get_db)
 ):
@@ -87,7 +91,7 @@ def update_api_key(
     return {"message": f"API key with ID {api_key_id} has been updated successfully."}
 
 
-@router.delete("/api/v1/consumer/api-key/{api_key_id}")
+@router.delete("/consumer/api-key/{api_key_id}")
 def delete_api_key(api_key_id: UUID, db: Session = Depends(get_db)):
     service = APIKeyService(uow=APIKeyUnitOfWork(session_factory=lambda: db))
     return service.delete_api_key(api_key_id)

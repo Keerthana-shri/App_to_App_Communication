@@ -18,6 +18,15 @@ class APIKeyRepository:
         api_keys = query.offset(skip).limit(page_size).all()
         return api_keys, total
 
+    def get_all_by_consumer(
+        self, consumer_id: UUID, page: int = 1, page_size: int = 10
+    ) -> Tuple[List[ApiKey], int]:
+        skip = (page - 1) * page_size
+        query = self.session.query(ApiKey).filter(ApiKey.consumer_id == consumer_id)
+        total = query.count()
+        api_keys = query.offset(skip).limit(page_size).all()
+        return api_keys, total
+
     def get(self, id: UUID) -> Optional[ApiKey]:
         return self.session.query(ApiKey).filter(ApiKey.id == id).first()
 

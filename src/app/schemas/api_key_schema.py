@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -54,3 +54,12 @@ class APIKeyDetailResponse(BaseModel):
     status: StatusEnum
     created_at: datetime
     updated_at: Optional[datetime] = None
+
+
+class APIKeyListResponse(BaseModel):
+    total_pages: int
+    previous_page: Optional[int]
+    current_page: int
+    next_page: Optional[int]
+    page_size: int
+    items: List[APIKeyDetailResponse]
