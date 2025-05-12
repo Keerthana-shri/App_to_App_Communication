@@ -118,6 +118,12 @@ class Application(Base):
         "ApiKey", back_populates="consumer_app", foreign_keys="ApiKey.consumer_id"
     )
 
+    logs = relationship(
+        "Log",
+        back_populates="application",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     owner = relationship("User", back_populates="applications")
 
@@ -197,7 +203,9 @@ class Log(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     application_id = Column(
-        UUID(as_uuid=True), ForeignKey("applications.id"), nullable=False
+        UUID(as_uuid=True),
+        ForeignKey("applications.id", ondelete="CASCADE"),
+        nullable=False,
     )
     description = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), default=func.now())
