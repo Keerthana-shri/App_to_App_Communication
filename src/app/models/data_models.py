@@ -101,11 +101,13 @@ class Application(Base):
     status = Column(Enum(StatusEnum), default=StatusEnum.active)
     comment = Column(Text)
 
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
     created_at = Column(DateTime(timezone=True), default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    owner = relationship("User", back_populates="applications")
+    owner = relationship("User", back_populates="applications", passive_deletes=True)
 
     provided_keys = relationship(
         "ApiKey", back_populates="provider_app", foreign_keys="ApiKey.provider_id"
@@ -114,7 +116,12 @@ class Application(Base):
         "ApiKey", back_populates="consumer_app", foreign_keys="ApiKey.consumer_id"
     )
 
-    logs = relationship("Log", back_populates="application")
+    logs = relationship(
+        "Log",
+        back_populates="application",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
 
 class ApiKey(Base):
@@ -183,7 +190,9 @@ class Log(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     application_id = Column(
-        UUID(as_uuid=True), ForeignKey("applications.id"), nullable=False
+        UUID(as_uuid=True),
+        ForeignKey("applications.id", ondelete="CASCADE"),
+        nullable=False,
     )
     description = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), default=func.now())
