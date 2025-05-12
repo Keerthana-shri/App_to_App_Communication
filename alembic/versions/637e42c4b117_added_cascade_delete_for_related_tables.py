@@ -1,7 +1,9 @@
 """Added cascade delete for related tables
+
 Revision ID: 637e42c4b117
 Revises: bca487e3159e
 Create Date: 2025-05-09 16:57:11.892645
+
 """
 from typing import Sequence, Union
 
