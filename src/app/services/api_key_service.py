@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
+from cryptography.fernet import Fernet
+
 from src.app.models.data_models import ApiKey, PermissionEnum, StatusEnum
 from src.app.schemas.api_key_schema import (
     APIKeyDetailResponse,
@@ -11,8 +13,9 @@ from src.app.services.unit_of_work import APIKeyUnitOfWork
 
 
 class APIKeyService:
-    def __init__(self, uow: APIKeyUnitOfWork):
+    def __init__(self, uow: APIKeyUnitOfWork, encryption_key: bytes):
         self.uow = uow
+        self.cipher_suite = Fernet(encryption_key)
 
     def generate_api_key(
         self,
@@ -51,13 +54,14 @@ class APIKeyService:
             is_active = now <= expires_at
 
             api_key = str(uuid4())
+            encrypted_api_key = self.cipher_suite.encrypt(api_key.encode())
 
             api_key_entry = ApiKey(
                 provider_id=provider_application_id,
                 consumer_id=consumer_application_id,
                 api_key_owner_id=api_key_owner_id,
                 permissions=permissions,
-                api_key=api_key,
+                api_key=encrypted_api_key.decode(),
                 expires_at=expires_at,
                 comment=comment,
                 status=StatusEnum.active if is_active else StatusEnum.inactive,
@@ -69,7 +73,7 @@ class APIKeyService:
 
             return {
                 "message": "API key generated successfully",
-                "api_key": api_key,
+                "api_key": encrypted_api_key.decode(),
                 "status": api_key_entry.status,
             }
 
