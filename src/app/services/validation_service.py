@@ -1,7 +1,12 @@
 from fastapi import HTTPException
 from uuid import UUID
-from passlib.hash import bcrypt
+from cryptography.fernet import Fernet
 from src.app.services.unit_of_work import UnitOfWork
+from src.app.config.settings import app_config
+
+# Initialize the cipher suite using the encryption key
+ENCRYPTION_KEY = app_config["ENCRYPTION_KEY"]
+cipher_suite = Fernet(ENCRYPTION_KEY)
 
 
 def validate_consumer_app(unit_of_work: UnitOfWork, consumer_id: UUID, secret_hash: str):
@@ -19,8 +24,13 @@ def validate_consumer_app(unit_of_work: UnitOfWork, consumer_id: UUID, secret_ha
 
         if not consumer_app:
             raise HTTPException(status_code=404, detail="Consumer application not found.")
-        print(consumer_app.secret_hash, secret_hash)
-        if not bcrypt.verify(secret_hash, consumer_app.secret_hash):
+
+        try:
+            # Decrypt the stored secret hash and compare it with the provided secret
+            decrypted_secret = cipher_suite.decrypt(consumer_app.secret_hash.encode()).decode()
+            if decrypted_secret != secret_hash:
+                raise HTTPException(status_code=403, detail="Invalid secret hash for consumer application.")
+        except Exception:
             raise HTTPException(status_code=403, detail="Invalid secret hash for consumer application.")
 
         if consumer_app.type.value != "consumer":
@@ -44,8 +54,13 @@ def validate_provider_app(unit_of_work: UnitOfWork, provider_id: UUID, secret_ha
 
         if not provider_app:
             raise HTTPException(status_code=404, detail="Provider application not found.")
-        
-        if not bcrypt.verify(secret_hash, provider_app.secret_hash):
+
+        try:
+            # Decrypt the stored secret hash and compare it with the provided secret
+            decrypted_secret = cipher_suite.decrypt(provider_app.secret_hash.encode()).decode()
+            if decrypted_secret != secret_hash:
+                raise HTTPException(status_code=403, detail="Invalid secret hash for provider application.")
+        except Exception:
             raise HTTPException(status_code=403, detail="Invalid secret hash for provider application.")
 
         if provider_app.type.value != "provider":
@@ -60,7 +75,6 @@ def validate_api_key(unit_of_work: UnitOfWork, api_key: str):
     Args:
         unit_of_work (UnitOfWork): Database session and repository manager.
         api_key (str): The API key to validate.
-        provider_id (UUID): Unique identifier of the provider app.
     Raises:
         HTTPException: If the API key is not valid.
     """
