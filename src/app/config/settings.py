@@ -19,5 +19,3 @@ def get_settings():
 
 
 app_config = get_settings()
-
-ENCRYPTION_KEY = app_config.get("ENCRYPTION_KEY")
