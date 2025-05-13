@@ -19,8 +19,10 @@ from src.app.services.unit_of_work import APIKeyUnitOfWork
 router = APIRouter()
 
 
-@router.post("/consumer/api-key", response_model=APIKeyResponse)
-def generate_api_key(request: APIKeyCreate, db: Session = Depends(get_db)):
+@router.post("/consumers/{consumer_id}/api-key", response_model=APIKeyResponse)
+def generate_api_key(
+    consumer_id: UUID, request: APIKeyCreate, db: Session = Depends(get_db)
+):
     service = APIKeyService(
         uow=APIKeyUnitOfWork(session_factory=lambda: db),
         encryption_key=ENCRYPTION_KEY.encode(),
@@ -31,7 +33,7 @@ def generate_api_key(request: APIKeyCreate, db: Session = Depends(get_db)):
         )
 
         response = service.generate_api_key(
-            consumer_application_id=request.consumer_id,
+            consumer_application_id=consumer_id,
             provider_application_id=request.provider_id,
             secret_hash=request.secret_hash,
             api_key_owner_id=request.api_key_owner_id,
@@ -44,7 +46,7 @@ def generate_api_key(request: APIKeyCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/consumer/{consumer_id}/api-keys", response_model=APIKeyListResponse)
+@router.get("/consumers/{consumer_id}/api-keys", response_model=APIKeyListResponse)
 def get_all_api_keys(
     consumer_id: UUID,
     page: int = Query(1),
@@ -61,8 +63,10 @@ def get_all_api_keys(
     return response
 
 
-@router.get("/consumer/api-key/{api_key_id}", response_model=APIKeyDetailResponse)
-def get_api_key(api_key_id: UUID, db: Session = Depends(get_db)):
+@router.get(
+    "/consumers/{consumer_id}/api-key/{api_key_id}", response_model=APIKeyDetailResponse
+)
+def get_api_key(consumer_id: UUID, api_key_id: UUID, db: Session = Depends(get_db)):
     service = APIKeyService(
         uow=APIKeyUnitOfWork(session_factory=lambda: db),
         encryption_key=ENCRYPTION_KEY.encode(),
@@ -73,9 +77,12 @@ def get_api_key(api_key_id: UUID, db: Session = Depends(get_db)):
     return api_key
 
 
-@router.patch("/consumer/api-key/{api_key_id}")
+@router.patch("/consumers/{consumer_id}/api-key/{api_key_id}")
 def update_api_key(
-    api_key_id: UUID, request: APIKeyUpdate, db: Session = Depends(get_db)
+    consumer_id: UUID,
+    api_key_id: UUID,
+    request: APIKeyUpdate,
+    db: Session = Depends(get_db),
 ):
     service = APIKeyService(
         uow=APIKeyUnitOfWork(session_factory=lambda: db),
@@ -104,8 +111,8 @@ def update_api_key(
     return {"message": f"API key with ID {api_key_id} has been updated successfully."}
 
 
-@router.delete("/consumer/api-key/{api_key_id}")
-def delete_api_key(api_key_id: UUID, db: Session = Depends(get_db)):
+@router.delete("/consumers/{consumer_id}/api-key/{api_key_id}")
+def delete_api_key(consumer_id: UUID, api_key_id: UUID, db: Session = Depends(get_db)):
     service = APIKeyService(
         uow=APIKeyUnitOfWork(session_factory=lambda: db),
         encryption_key=ENCRYPTION_KEY.encode(),
