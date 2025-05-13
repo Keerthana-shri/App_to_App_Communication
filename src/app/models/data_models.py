@@ -98,7 +98,7 @@ class Application(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String(100), nullable=False)
-    secret_hash = Column(String(255), nullable=False)
+    secret_hash = Column(Text, nullable=False)
     type = Column(Enum(AppType), nullable=False)  # provider or consumer
     status = Column(Enum(StatusEnum), default=StatusEnum.active)
     comment = Column(Text)

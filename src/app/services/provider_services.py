@@ -1,9 +1,10 @@
 from datetime import datetime, timezone
 from uuid import UUID
 
+from cryptography.fernet import Fernet
 from fastapi import HTTPException
-from passlib.hash import bcrypt
 
+from src.app.config.settings import app_config
 from src.app.schemas.provider_schemas import (
     PaginatedResponse,
     ProviderDetailsResponse,
@@ -12,6 +13,9 @@ from src.app.schemas.provider_schemas import (
     Response,
 )
 from src.app.services.unit_of_work import UnitOfWork
+
+ENCRYPTION_KEY = app_config["ENCRYPTION_KEY"]
+cipher_suite = Fernet(ENCRYPTION_KEY)
 
 
 def register_provider(unit_of_work: UnitOfWork, data: ProviderRegisterRequest):
@@ -38,14 +42,13 @@ def register_provider(unit_of_work: UnitOfWork, data: ProviderRegisterRequest):
                 status_code=409, detail="The application is already registered."
             )
 
-        # Hash the application secret using bcrypt
         secret_code = str(data.application_secret)
-        hashed_secret = bcrypt.hash(secret_code)
+        encrypted_secret = cipher_suite.encrypt(secret_code.encode())
 
         uow.application.add(
             id=data.application_guid,
             name=data.application_name,
-            secret_hash=hashed_secret,
+            secret_hash=encrypted_secret,
             type="provider",
             user_id=data.user_id,
             comment=data.comments,
