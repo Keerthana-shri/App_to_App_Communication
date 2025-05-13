@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from src.app.config.database import get_db
-from src.app.config.settings import ENCRYPTION_KEY
+from src.app.config.settings import app_config
 from src.app.schemas.api_key_schema import (
     APIKeyCreate,
     APIKeyDetailResponse,
@@ -25,7 +25,6 @@ def generate_api_key(
 ):
     service = APIKeyService(
         uow=APIKeyUnitOfWork(session_factory=lambda: db),
-        encryption_key=ENCRYPTION_KEY.encode(),
     )
     try:
         expires_at = datetime.combine(request.expires_at, datetime.max.time()).replace(
@@ -53,10 +52,7 @@ def get_all_api_keys(
     page_size: int = Query(10),
     db: Session = Depends(get_db),
 ):
-    service = APIKeyService(
-        uow=APIKeyUnitOfWork(session_factory=lambda: db),
-        encryption_key=ENCRYPTION_KEY.encode(),
-    )
+    service = APIKeyService(uow=APIKeyUnitOfWork(session_factory=lambda: db))
     response = service.get_all_api_keys(
         consumer_id=consumer_id, page=page, page_size=page_size
     )
@@ -67,10 +63,7 @@ def get_all_api_keys(
     "/consumers/{consumer_id}/api-key/{api_key_id}", response_model=APIKeyDetailResponse
 )
 def get_api_key(consumer_id: UUID, api_key_id: UUID, db: Session = Depends(get_db)):
-    service = APIKeyService(
-        uow=APIKeyUnitOfWork(session_factory=lambda: db),
-        encryption_key=ENCRYPTION_KEY.encode(),
-    )
+    service = APIKeyService(uow=APIKeyUnitOfWork(session_factory=lambda: db))
     api_key = service.get_api_key(api_key_id)
     if not api_key:
         raise HTTPException(status_code=404, detail="API key not found")
@@ -84,10 +77,7 @@ def update_api_key(
     request: APIKeyUpdate,
     db: Session = Depends(get_db),
 ):
-    service = APIKeyService(
-        uow=APIKeyUnitOfWork(session_factory=lambda: db),
-        encryption_key=ENCRYPTION_KEY.encode(),
-    )
+    service = APIKeyService(uow=APIKeyUnitOfWork(session_factory=lambda: db))
     restricted_fields = {
         "provider_id",
         "consumer_id",
@@ -113,8 +103,5 @@ def update_api_key(
 
 @router.delete("/consumers/{consumer_id}/api-key/{api_key_id}")
 def delete_api_key(consumer_id: UUID, api_key_id: UUID, db: Session = Depends(get_db)):
-    service = APIKeyService(
-        uow=APIKeyUnitOfWork(session_factory=lambda: db),
-        encryption_key=ENCRYPTION_KEY.encode(),
-    )
+    service = APIKeyService(uow=APIKeyUnitOfWork(session_factory=lambda: db))
     return service.delete_api_key(api_key_id)

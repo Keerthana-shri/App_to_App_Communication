@@ -3,20 +3,16 @@ from uuid import UUID, uuid4
 
 from cryptography.fernet import Fernet
 
-from src.app.config.settings import ENCRYPTION_KEY
+from src.app.config.settings import app_config
 from src.app.models.data_models import ApiKey, PermissionEnum, StatusEnum
-from src.app.schemas.api_key_schema import (
-    APIKeyDetailResponse,
-    APIKeyListResponse,
-    APIKeyResponse,
-)
+from src.app.schemas.api_key_schema import APIKeyDetailResponse, APIKeyListResponse
 from src.app.services.unit_of_work import APIKeyUnitOfWork
 
 
 class APIKeyService:
-    def __init__(self, uow: APIKeyUnitOfWork, encryption_key: bytes):
+    def __init__(self, uow: APIKeyUnitOfWork):
         self.uow = uow
-        self.cipher_suite = Fernet(encryption_key)
+        self.cipher_suite = Fernet(app_config["ENCRYPTION_KEY"])
 
     def generate_api_key(
         self,
@@ -39,7 +35,11 @@ class APIKeyService:
                 error_messages.append("Invalid consumer application ID")
             if not provider_app:
                 error_messages.append("Invalid provider application ID")
-            if consumer_app and consumer_app.secret_hash != secret_hash:
+            if (
+                consumer_app
+                and self.cipher_suite.decrypt(consumer_app.secret_hash).decode()
+                != secret_hash
+            ):
                 error_messages.append("Invalid secret hash")
             if not api_key_owner:
                 error_messages.append("Invalid user to be the owner")
