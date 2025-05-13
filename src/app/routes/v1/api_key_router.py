@@ -16,7 +16,7 @@ from src.app.schemas.api_key_schema import (
 from src.app.services.api_key_service import APIKeyService
 from src.app.services.unit_of_work import APIKeyUnitOfWork
 
-router = APIRouter()
+router = APIRouter(tags=["Consumer"])
 
 
 @router.post("/consumers/{consumer_id}/api-key", response_model=APIKeyResponse)
