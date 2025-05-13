@@ -28,41 +28,12 @@ class APIKeyRepository:
         return api_keys, total
 
     def get(self, id: UUID) -> Optional[ApiKey]:
-        """
-        Retrieve a single API key by its ID.
-
-        Args:
-            id (UUID): The unique identifier of the API key.
-
-        Returns:
-            Optional[ApiKey]: The ApiKey object if found, otherwise None.
-        """
         return self.session.query(ApiKey).filter(ApiKey.id == id).first()
 
-    def add(self, **kwargs: object) -> None:
-        """
-        Add a new API key to the database.
-
-        Args:
-            **kwargs (object): The attributes of the API key to be created.
-
-        Returns:
-            None
-        """
-        api_key = ApiKey(**kwargs)
+    def add(self, api_key: ApiKey) -> None:
         self.session.add(api_key)
 
     def update(self, id: UUID, **kwargs: object) -> None:
-        """
-        Update an existing API key with new attributes.
-
-        Args:
-            id (UUID): The unique identifier of the API key to update.
-            **kwargs (object): The attributes to update.
-
-        Returns:
-            None
-        """
         api_key = self.get(id=id)
         if api_key:
             allowed_fields = {
@@ -82,15 +53,6 @@ class APIKeyRepository:
                     api_key.status = StatusEnum.inactive
 
     def delete(self, id: UUID) -> None:
-        """
-        Delete an API key from the database.
-
-        Args:
-            id (UUID): The unique identifier of the API key to delete.
-
-        Returns:
-            None
-        """
         api_key = self.get(id=id)
         if api_key:
             self.session.delete(api_key)
