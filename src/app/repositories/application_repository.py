@@ -61,7 +61,7 @@ class ApplicationRepository(BaseRepository[Application]):
     def add(self, **kwargs: object) -> None:
         """
         Add a new application record to the database.
-        
+
         Parameters:
             kwargs (object): Key-value pairs of attributes for the new application.
         """
@@ -71,7 +71,7 @@ class ApplicationRepository(BaseRepository[Application]):
     def update(self, id: UUID, **kwargs: object) -> None:
         """
         Update an existing application record.
-        
+
         Parameters:
             id (UUID): The unique identifier of the application to update.
             kwargs (object): Key-value pairs of attributes to update.
@@ -84,7 +84,7 @@ class ApplicationRepository(BaseRepository[Application]):
     def delete(self, id: UUID) -> None:
         """
         Delete an application by ID.
-        
+
         Parameters:
             id (UUID): The unique identifier of the application.
         """

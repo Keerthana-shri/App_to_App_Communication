@@ -74,6 +74,7 @@ class User(Base):
     applications = relationship("Application", back_populates="owner")
     api_keys = relationship("ApiKey", back_populates="owner")
 
+
 class Application(Base):
     """
     Represents an application in the system.
@@ -126,6 +127,7 @@ class Application(Base):
     )
 
     owner = relationship("User", back_populates="applications")
+
 
 class ApiKey(Base):
     """

@@ -5,7 +5,6 @@ from src.app.repositories.application_repository import ApplicationRepository
 from src.app.repositories.user_repository import UserRepository
 
 from ..repositories.api_key_repository import APIKeyRepository
-from ..repositories.provider_repository import ProviderRepository
 
 
 class BaseUnitOfWork(ABC):
@@ -78,6 +77,8 @@ class APIKeyUnitOfWork(BaseUnitOfWork):
         self.api_key = APIKeyRepository(session=self.session)
         self.application = ApplicationRepository(session=self.session)
         self.user = UserRepository(session=self.session)
+
+
 class UnitOfWork(BaseUnitOfWork):
     """
     A Unit of Work implementation for managing database transactions related to groups.
