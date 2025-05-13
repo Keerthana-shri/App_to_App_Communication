@@ -27,7 +27,7 @@ def validate_consumer_app(unit_of_work: UnitOfWork, consumer_id: UUID, secret_ha
 
         try:
             # Decrypt the stored secret hash and compare it with the provided secret
-            decrypted_secret = cipher_suite.decrypt(consumer_app.secret_hash.encode()).decode()
+            decrypted_secret = cipher_suite.decrypt(consumer_app.secret_hash).decode()
             if decrypted_secret != secret_hash:
                 raise HTTPException(status_code=403, detail="Invalid secret hash for consumer application.")
         except Exception:
@@ -57,7 +57,7 @@ def validate_provider_app(unit_of_work: UnitOfWork, provider_id: UUID, secret_ha
 
         try:
             # Decrypt the stored secret hash and compare it with the provided secret
-            decrypted_secret = cipher_suite.decrypt(provider_app.secret_hash.encode()).decode()
+            decrypted_secret = cipher_suite.decrypt(provider_app.secret_hash).decode()
             if decrypted_secret != secret_hash:
                 raise HTTPException(status_code=403, detail="Invalid secret hash for provider application.")
         except Exception:
