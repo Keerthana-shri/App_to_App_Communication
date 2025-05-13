@@ -12,8 +12,8 @@ python-dotenv = "*"
 psycopg2-binary = "*"
 alembic = "*"
 pre-commit = "*"
-bcrypt = "*"
 passlib = {extras = ["bcrypt"], version = "*"}
+bcrypt = "==4.0.1"
 
 [dev-packages]
 

@@ -19,7 +19,7 @@ def validate_consumer_app(unit_of_work: UnitOfWork, consumer_id: UUID, secret_ha
 
         if not consumer_app:
             raise HTTPException(status_code=404, detail="Consumer application not found.")
-
+        print(consumer_app.secret_hash, secret_hash)
         if not bcrypt.verify(secret_hash, consumer_app.secret_hash):
             raise HTTPException(status_code=403, detail="Invalid secret hash for consumer application.")
 
@@ -44,7 +44,7 @@ def validate_provider_app(unit_of_work: UnitOfWork, provider_id: UUID, secret_ha
 
         if not provider_app:
             raise HTTPException(status_code=404, detail="Provider application not found.")
-
+        
         if not bcrypt.verify(secret_hash, provider_app.secret_hash):
             raise HTTPException(status_code=403, detail="Invalid secret hash for provider application.")
 
