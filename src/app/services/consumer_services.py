@@ -45,7 +45,7 @@ def register_consumer(unit_of_work: UnitOfWork, data: ConsumerRegisterRequest):
 
         # Hash the application secret using bcrypt
         secret_code = str(data.application_secret)
-        encrypted_secret = cipher_suite.encrypt(secret_code.encode())
+        encrypted_secret = cipher_suite.encrypt(secret_code.encode()).decode()
 
         uow.application.add(
             id=data.application_guid,
