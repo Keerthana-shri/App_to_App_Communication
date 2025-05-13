@@ -13,3 +13,4 @@ class ProviderValidationRequest(BaseModel):
 
 class ApiKeyValidationRequest(BaseModel):
     api_key: str
+    provider_id: UUID4

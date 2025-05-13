@@ -3,6 +3,7 @@ from uuid import UUID
 from cryptography.fernet import Fernet
 from src.app.services.unit_of_work import UnitOfWork
 from src.app.config.settings import app_config
+from src.app.models.data_models import StatusEnum 
 
 # Initialize the cipher suite using the encryption key
 ENCRYPTION_KEY = app_config["ENCRYPTION_KEY"]
@@ -69,14 +70,20 @@ def validate_provider_app(unit_of_work: UnitOfWork, provider_id: UUID, secret_ha
     return {"message": "Provider application validated successfully."}
 
 
-def validate_api_key(unit_of_work: UnitOfWork, api_key: str):
+def validate_api_key(unit_of_work: UnitOfWork, api_key: str, provider_id: UUID):
     """
-    Validates the API key by checking its presence, status, and association with the provider app.
+    Validates the API key by checking its presence, status, association with the provider app, and owner.
+
     Args:
         unit_of_work (UnitOfWork): Database session and repository manager.
         api_key (str): The API key to validate.
+        provider_id (UUID): The provider application's unique identifier.
+
     Raises:
         HTTPException: If the API key is not valid.
+
+    Returns:
+        dict: Validation result including validity, expiration time, and API key owner.
     """
     with unit_of_work as uow:
         key = uow.api_key.get_by_key(api_key)
@@ -84,7 +91,21 @@ def validate_api_key(unit_of_work: UnitOfWork, api_key: str):
         if not key:
             raise HTTPException(status_code=404, detail="API key not found.")
 
-        if key.status.value != "active":
+        if key.status != StatusEnum.active:
             raise HTTPException(status_code=403, detail="API key is not active.")
 
-    return {"message": "API key validated successfully."}
+        if key.provider_id != provider_id:
+            raise HTTPException(
+                status_code=403,
+                detail="API key is not associated with the specified provider application.",
+            )
+
+        return {
+            "is_valid": True,
+            "expires_at": key.expires_at,
+            "api_key_owner": {
+                "id": key.api_key_owner_id,
+                "name": key.owner.name,  
+                "email": key.owner.email,  
+            },
+        }

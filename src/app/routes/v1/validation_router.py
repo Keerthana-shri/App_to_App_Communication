@@ -57,7 +57,11 @@ def validate_provider(
 
 
 @router.post("/api-key")
-def validate_key(api_key: str, unit_of_work: UnitOfWork = Depends(get_unit_of_work)):
+def validate_key(
+    api_key: str, 
+    provider_id: UUID, 
+    unit_of_work: UnitOfWork = Depends(get_unit_of_work)
+):
     """
     Endpoint to validate an API key.
 
@@ -72,4 +76,4 @@ def validate_key(api_key: str, unit_of_work: UnitOfWork = Depends(get_unit_of_wo
     Raises:
         HTTPException: If the validation fails or an error occurs.
     """
-    return validate_api_key(unit_of_work, api_key)
+    return validate_api_key(unit_of_work, api_key, provider_id)

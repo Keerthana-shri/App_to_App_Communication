@@ -61,6 +61,18 @@ class APIKeyRepository(BaseRepository[ApiKey]):
         """
         return self.session.query(ApiKey).filter(ApiKey.id == id).first()
 
+    def get_by_key(self, key: str) -> Optional[ApiKey]:
+        """
+        Retrieve an API key by its key value.
+
+        Args:
+            key (str): The API key value.
+
+        Returns:
+            Optional[ApiKey]: The ApiKey object if found, otherwise None.
+        """
+        return self.session.query(ApiKey).filter(ApiKey.api_key == key).first()
+
     def add(self, **kwargs: object) -> None:
         """
         Add a new API key to the database.
