@@ -20,7 +20,6 @@ class StatusEnum(str, Enum):
 
 class APIKeyCreate(BaseModel):
     provider_id: UUID
-    consumer_id: UUID
     secret_hash: str
     api_key_owner_id: UUID
     permissions: PermissionEnum
