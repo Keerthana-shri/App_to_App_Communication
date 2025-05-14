@@ -23,7 +23,7 @@ class BaseUnitOfWork(ABC):
         """
         Enter the runtime context, initializing a new database session.
         """
-        self.session = self.session_factory()
+        self.session = next(self.session_factory())
         self.session.autoflush = True
         return self
 
@@ -77,18 +77,3 @@ class APIKeyUnitOfWork(BaseUnitOfWork):
         self.api_key = APIKeyRepository(session=self.session)
         self.application = ApplicationRepository(session=self.session)
         self.user = UserRepository(session=self.session)
-
-
-class UnitOfWork(BaseUnitOfWork):
-    """
-    A Unit of Work implementation for managing database transactions related to groups.
-    """
-
-    def __enter__(self):
-        """
-        Enter the runtime context, initializing a new database session and repositories.
-        """
-        super().__enter__()
-        self.user = UserRepository(session=self.session)
-        self.application = ApplicationRepository(session=self.session)
-        return self

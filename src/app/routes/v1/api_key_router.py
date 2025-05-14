@@ -21,12 +21,8 @@ router = APIRouter(tags=["Consumer"])
 
 
 @router.post("/consumers/{consumer_id}/api-keys", response_model=APIKeyResponse)
-def generate_api_key(
-    consumer_id: UUID, request: APIKeyCreate, db: Session = Depends(get_db)
-):
-    service = APIKeyService(
-        uow=APIKeyUnitOfWork(session_factory=lambda: db),
-    )
+def generate_api_key(consumer_id: UUID, request: APIKeyCreate):
+    service = APIKeyService(uow=APIKeyUnitOfWork())
     try:
         expires_at = datetime.combine(request.expires_at, datetime.max.time()).replace(
             tzinfo=timezone.utc
@@ -51,9 +47,8 @@ def get_all_api_keys(
     consumer_id: UUID,
     page: int = Query(1),
     page_size: int = Query(10),
-    db: Session = Depends(get_db),
 ):
-    service = APIKeyService(uow=APIKeyUnitOfWork(session_factory=lambda: db))
+    service = APIKeyService(uow=APIKeyUnitOfWork())
     response = service.get_all_api_keys(
         consumer_id=consumer_id, page=page, page_size=page_size
     )
@@ -67,9 +62,8 @@ def get_all_api_keys(
 def get_api_key_of_provider(
     consumer_id: UUID,
     provider_id: UUID,
-    db: Session = Depends(get_db),
 ):
-    service = APIKeyService(uow=APIKeyUnitOfWork(session_factory=lambda: db))
+    service = APIKeyService(uow=APIKeyUnitOfWork())
     response = service.get_api_keys_of_particular_provider(
         consumer_id=consumer_id, provider_id=provider_id
     )
@@ -82,8 +76,8 @@ def get_api_key_of_provider(
     "/consumers/{consumer_id}/api-keys/{api_key_id}",
     response_model=APIKeyDetailResponse,
 )
-def get_api_key(consumer_id: UUID, api_key_id: UUID, db: Session = Depends(get_db)):
-    service = APIKeyService(uow=APIKeyUnitOfWork(session_factory=lambda: db))
+def get_api_key(consumer_id: UUID, api_key_id: UUID):
+    service = APIKeyService(uow=APIKeyUnitOfWork())
     api_key = service.get_api_key(api_key_id)
     if not api_key:
         raise HTTPException(status_code=404, detail="API key not found")
@@ -97,7 +91,7 @@ def update_api_key(
     request: APIKeyUpdate,
     db: Session = Depends(get_db),
 ):
-    service = APIKeyService(uow=APIKeyUnitOfWork(session_factory=lambda: db))
+    service = APIKeyService(uow=APIKeyUnitOfWork())
     restricted_fields = {
         "provider_id",
         "consumer_id",
@@ -122,6 +116,6 @@ def update_api_key(
 
 
 @router.delete("/consumers/{consumer_id}/api-keys/{api_key_id}")
-def delete_api_key(consumer_id: UUID, api_key_id: UUID, db: Session = Depends(get_db)):
-    service = APIKeyService(uow=APIKeyUnitOfWork(session_factory=lambda: db))
+def delete_api_key(consumer_id: UUID, api_key_id: UUID):
+    service = APIKeyService(uow=APIKeyUnitOfWork())
     return service.delete_api_key(api_key_id)
