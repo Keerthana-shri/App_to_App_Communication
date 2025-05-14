@@ -49,17 +49,25 @@ class APIKeyRepository:
         api_keys = query.offset(skip).limit(page_size).all()
         return api_keys, total
 
-    def get(self, id: UUID) -> Optional[ApiKey]:
+    def get(
+        self, id: Optional[UUID] = None, api_key: Optional[str] = None
+    ) -> Optional[ApiKey]:
         """
-        Retrieves an API key by its ID.
+        Retrieve an API key by its ID or API key string.
 
         Args:
-            id (UUID): The ID of the API key.
+            id (Optional[UUID]): The unique identifier of the API key.
+            api_key (Optional[str]): The API key string.
 
         Returns:
-            Optional[ApiKey]: The API key if found, otherwise None.
+            Optional[ApiKey]: The ApiKey object if found, otherwise None.
         """
-        return self.session.query(ApiKey).filter(ApiKey.id == id).first()
+        query = self.session.query(ApiKey)
+        if id:
+            query = query.filter(ApiKey.id == id)
+        if api_key:
+            query = query.filter(ApiKey.api_key == api_key)
+        return query.first()
 
     def add(self, api_key: ApiKey) -> None:
         """
