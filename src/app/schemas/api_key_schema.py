@@ -41,6 +41,10 @@ class APIKeyResponse(BaseModel):
     status: StatusEnum
 
 
+class XAPIKeyResponse(BaseModel):
+    x_api_key: str
+
+
 class APIKeyDetailResponse(BaseModel):
     id: UUID
     provider_id: UUID

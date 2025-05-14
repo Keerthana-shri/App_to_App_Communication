@@ -5,7 +5,11 @@ from cryptography.fernet import Fernet
 
 from src.app.config.settings import app_config
 from src.app.models.data_models import ApiKey, PermissionEnum, StatusEnum
-from src.app.schemas.api_key_schema import APIKeyDetailResponse, APIKeyListResponse
+from src.app.schemas.api_key_schema import (
+    APIKeyDetailResponse,
+    APIKeyListResponse,
+    XAPIKeyResponse,
+)
 from src.app.services.unit_of_work import APIKeyUnitOfWork
 
 
@@ -97,6 +101,17 @@ class APIKeyService:
                 page_size=page_size,
                 items=api_key_responses,
             )
+
+    def get_api_keys_of_particular_provider(
+        self, consumer_id: UUID, provider_id: UUID = None
+    ):
+        with self.uow:
+            api_key, total = self.uow.api_key.get_all_by_consumer(
+                consumer_id=consumer_id, provider_id=provider_id
+            )
+            print(api_key[0])
+            response = XAPIKeyResponse(x_api_key=api_key[0].__dict__.get("api_key"))
+            return response
 
     def get_api_key(self, api_key_id: UUID):
         with self.uow:

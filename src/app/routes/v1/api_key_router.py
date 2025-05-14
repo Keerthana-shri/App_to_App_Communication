@@ -12,6 +12,7 @@ from src.app.schemas.api_key_schema import (
     APIKeyListResponse,
     APIKeyResponse,
     APIKeyUpdate,
+    XAPIKeyResponse,
 )
 from src.app.services.api_key_service import APIKeyService
 from src.app.services.unit_of_work import APIKeyUnitOfWork
@@ -56,6 +57,24 @@ def get_all_api_keys(
     response = service.get_all_api_keys(
         consumer_id=consumer_id, page=page, page_size=page_size
     )
+    return response
+
+
+@router.get(
+    "/consumers/{consumer_id}/providers/{provider_id}/api-keys",
+    response_model=XAPIKeyResponse,
+)
+def get_api_key_of_provider(
+    consumer_id: UUID,
+    provider_id: UUID,
+    db: Session = Depends(get_db),
+):
+    service = APIKeyService(uow=APIKeyUnitOfWork(session_factory=lambda: db))
+    response = service.get_api_keys_of_particular_provider(
+        consumer_id=consumer_id, provider_id=provider_id
+    )
+    if not response:
+        raise HTTPException(status_code=404, detail="API key not found")
     return response
 
 

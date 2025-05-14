@@ -19,10 +19,16 @@ class APIKeyRepository:
         return api_keys, total
 
     def get_all_by_consumer(
-        self, consumer_id: UUID, page: int = 1, page_size: int = 10
+        self,
+        consumer_id: UUID,
+        page: int = 1,
+        page_size: int = 10,
+        provider_id: UUID = None,
     ) -> Tuple[List[ApiKey], int]:
         skip = (page - 1) * page_size
         query = self.session.query(ApiKey).filter(ApiKey.consumer_id == consumer_id)
+        if provider_id:
+            query = query.filter(ApiKey.provider_id == provider_id)
         total = query.count()
         api_keys = query.offset(skip).limit(page_size).all()
         return api_keys, total
