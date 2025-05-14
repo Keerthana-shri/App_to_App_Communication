@@ -29,6 +29,7 @@ class ApplicationRepository(BaseRepository[Application]):
                 - Expected values: "name", "status", "created_at", "updated_at"
                 - Defaults to "created_at"
             order (str, optional): Sorting order ("asc" or "desc"). Defaults to "asc".
+
         Returns:
             List[Application]: A list of application records.
         """
@@ -51,8 +52,10 @@ class ApplicationRepository(BaseRepository[Application]):
     def get(self, id: UUID) -> Optional[Application]:
         """
         Retrieve a single application by its unique identifier.
+
         Parameters:
             id (UUID): The unique identifier of the application.
+
         Returns:
             Application | None: The application record if found, else None.
         """
