@@ -3,24 +3,44 @@ from uuid import UUID, uuid4
 
 from cryptography.fernet import Fernet
 
-from src.app.config.settings import ENCRYPTION_KEY
+from src.app.config.settings import app_config
 from src.app.models.data_models import ApiKey, PermissionEnum, StatusEnum
-from src.app.schemas.api_key_schema import (
-    APIKeyDetailResponse,
-    APIKeyListResponse,
-    APIKeyResponse,
-)
+from src.app.schemas.api_key_schema import APIKeyDetailResponse, APIKeyListResponse
 from src.app.services.unit_of_work import APIKeyUnitOfWork
 
 
 class APIKeyService:
-    def __init__(self, uow: APIKeyUnitOfWork, encryption_key: bytes):
+    """
+    Service class for managing API keys.
+
+    Attributes:
+        uow (APIKeyUnitOfWork): Unit of work for API key operations.
+        cipher_suite (Fernet): Cipher suite for encrypting API keys.
+    """
+
+    def __init__(self, uow: APIKeyUnitOfWork):
+        """
+        Initializes the APIKeyService with a unit of work.
+
+        Args:
+            uow (APIKeyUnitOfWork): Unit of work for API key operations.
+        """
         self.uow = uow
-        self.cipher_suite = Fernet(encryption_key)
+        self.cipher_suite = Fernet(app_config["ENCRYPTION_KEY"])
 
     def validate_consumer_application(
         self, consumer_application_id: UUID, secret_hash: str
     ) -> None:
+        """
+        Validates the consumer application ID and secret hash.
+
+        Args:
+            consumer_application_id (UUID): The ID of the consumer application.
+            secret_hash (str): The secret hash to validate.
+
+        Raises:
+            ValueError: If the consumer application ID or secret hash is invalid.
+        """
         consumer_app = self.uow.application.get(consumer_application_id)
         if not consumer_app:
             raise ValueError("Invalid consumer application ID")
@@ -38,6 +58,24 @@ class APIKeyService:
         comment: str,
         secret_hash: str,
     ) -> dict:
+        """
+        Generates a new API key.
+
+        Args:
+            consumer_application_id (UUID): The ID of the consumer application.
+            provider_application_id (UUID): The ID of the provider application.
+            permissions (PermissionEnum): The permissions for the API key.
+            api_key_owner_id (UUID): The ID of the API key owner.
+            expires_at (datetime): The expiration date of the API key.
+            comment (str): A comment for the API key.
+            secret_hash (str): The secret hash for validation.
+
+        Returns:
+            dict: A dictionary containing the message, API key, and status.
+
+        Raises:
+            ValueError: If any validation fails.
+        """
         with self.uow:
             error_messages = []
 
@@ -48,9 +86,22 @@ class APIKeyService:
 
             provider_app = self.uow.application.get(provider_application_id)
             api_key_owner = self.uow.user.get(api_key_owner_id)
+            consumer_app = self.uow.application.get(consumer_application_id)
 
             if not provider_app:
                 error_messages.append("Invalid provider application ID")
+            elif provider_app.type.value != "provider":
+                error_messages.append(
+                    "Application ID provided is not of type 'provider'"
+                )
+
+            if not consumer_app:
+                error_messages.append("Invalid consumer application ID")
+            elif consumer_app.type.value != "consumer":
+                error_messages.append(
+                    "Application ID provided is not of type 'consumer'"
+                )
+
             if not api_key_owner:
                 error_messages.append("Invalid user to be the owner")
             if permissions not in PermissionEnum.__members__.values():
@@ -59,12 +110,13 @@ class APIKeyService:
             if error_messages:
                 raise ValueError(", ".join(error_messages))
 
-            existing_api_key = self.uow.api_key.get_by_provider_and_consumer(
-                provider_id=provider_application_id, consumer_id=consumer_application_id
+            existing_api_keys, _ = self.uow.api_key.get_all(
+                filters={
+                    "provider_id": provider_application_id,
+                    "consumer_id": consumer_application_id,
+                }
             )
-            print(
-                f"Fetched API key status: {existing_api_key.status if existing_api_key else 'None'}"
-            )
+            existing_api_key = existing_api_keys[0] if existing_api_keys else None
 
             if existing_api_key:
                 if existing_api_key.status in [StatusEnum.active, StatusEnum.revoked]:
@@ -75,7 +127,6 @@ class APIKeyService:
                     }
                 elif existing_api_key.status == StatusEnum.inactive:
                     existing_api_key.status = StatusEnum.revoked
-                    print("Updating API key status to revoked")
                     self.uow.api_key.update(
                         existing_api_key.id,
                         **{
@@ -85,13 +136,13 @@ class APIKeyService:
                             "comment": comment,
                         },
                     )
-                    print(f"API key updated: {existing_api_key}")
                     return {
                         "message": "API key details updated and status set to revoked",
                         "api_key": existing_api_key.api_key,
-                        "status": existing_api_key.status,
+                        "status": StatusEnum.revoked,
                     }
 
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
             now = datetime.now(timezone.utc)
             is_active = now <= expires_at
 
@@ -120,9 +171,20 @@ class APIKeyService:
             }
 
     def get_all_api_keys(self, consumer_id: UUID, page: int = 1, page_size: int = 10):
+        """
+        Retrieves all API keys for a consumer with pagination.
+
+        Args:
+            consumer_id (UUID): The ID of the consumer.
+            page (int): The page number for pagination. Defaults to 1.
+            page_size (int): The number of items per page. Defaults to 10.
+
+        Returns:
+            APIKeyListResponse: A response object containing the API keys and pagination details.
+        """
         with self.uow:
-            api_keys, total = self.uow.api_key.get_all_by_consumer(
-                consumer_id=consumer_id, page=page, page_size=page_size
+            api_keys, total = self.uow.api_key.get_all(
+                page=page, page_size=page_size, filters={"consumer_id": consumer_id}
             )
             total_pages = (total + page_size - 1) // page_size
             previous_page = page - 1 if page > 1 else None
@@ -140,6 +202,15 @@ class APIKeyService:
             )
 
     def get_api_key(self, api_key_id: UUID):
+        """
+        Retrieves an API key by its ID.
+
+        Args:
+            api_key_id (UUID): The ID of the API key.
+
+        Returns:
+            APIKeyDetailResponse: The API key details if found, otherwise None.
+        """
         with self.uow:
             api_key = self.uow.api_key.get(api_key_id)
             if api_key:
@@ -147,6 +218,16 @@ class APIKeyService:
             return None
 
     def update_api_key(self, api_key_id: UUID, **kwargs):
+        """
+        Updates an API key with provided attributes.
+
+        Args:
+            api_key_id (UUID): The ID of the API key to update.
+            **kwargs (object): Attributes to update on the API key.
+
+        Returns:
+            dict: A message indicating the update status.
+        """
         with self.uow:
             if "expires_at" in kwargs:
                 expires_at = kwargs["expires_at"].replace(tzinfo=timezone.utc)
@@ -159,6 +240,15 @@ class APIKeyService:
             }
 
     def delete_api_key(self, api_key_id: UUID):
+        """
+        Deletes an API key by its ID.
+
+        Args:
+            api_key_id (UUID): The ID of the API key to delete.
+
+        Returns:
+            dict: A message indicating the deletion status.
+        """
         with self.uow:
             self.uow.api_key.delete(api_key_id)
             return {"message": "API key deleted successfully"}

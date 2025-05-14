@@ -6,6 +6,11 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 
+class AppType(str, Enum):
+    provider = "provider"
+    consumer = "consumer"
+
+
 class PermissionEnum(str, Enum):
     read = "read"
     write = "write"
@@ -19,20 +24,23 @@ class StatusEnum(str, Enum):
 
 
 class APIKeyCreate(BaseModel):
-    provider_id: UUID
-    secret_hash: str
-    api_key_owner_id: UUID
-    permissions: PermissionEnum
-    expires_at: datetime
-    comment: str
+    provider_id: UUID = Field(example="9b9475ad-5ca7-4b74-9b73-b732820644f9")
+    secret_hash: str = Field(example="s3cr3tH@sh")
+    api_key_owner_id: UUID = Field(example="072697aa-a9c8-4c5e-bb2d-c91a4f625d81")
+    permissions: PermissionEnum = Field(example="read")
+    expires_at: datetime = Field(example="2025-05-15")
+    comment: str = Field(example="This is a sample API key.")
 
 
 class APIKeyUpdate(BaseModel):
-    status: Optional[StatusEnum] = None
-    permissions: Optional[PermissionEnum] = None
-    expires_at: Optional[datetime] = None
-    comment: Optional[str] = None
-    api_key: Optional[str] = None
+    status: Optional[StatusEnum] = Field(None, example="active")
+    permissions: Optional[PermissionEnum] = Field(None, example="read")
+    expires_at: Optional[datetime] = Field(None, example="2025-05-15")
+    comment: Optional[str] = Field(None, example="Updated this value.")
+    api_key: Optional[str] = Field(
+        None,
+        example="gAAAAABoJJIhIatLEuL9WRKLnWWRhDTXzzf9CI2J6-cY07qWQ9bYfUAB37C-G5NlcrJLH1ewIDKqKFqEptkUQ9brKl_X66-XKofrttbpK5hUt_mMHhKcygYz5d3dbYr1Y6F9toGKasSp",
+    )
 
 
 class APIKeyResponse(BaseModel):

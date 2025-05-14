@@ -8,47 +8,76 @@ from src.app.models.data_models import ApiKey, StatusEnum
 
 
 class APIKeyRepository:
+    """
+    Repository class for managing API keys in the database.
+
+    Attributes:
+        session (Session): SQLAlchemy session for database operations.
+    """
+
     def __init__(self, session: Session):
+        """
+        Initializes the APIKeyRepository with a database session.
+
+        Args:
+            session (Session): SQLAlchemy session for database operations.
+        """
         self.session = session
 
-    def get_all(self, page: int = 1, page_size: int = 10) -> Tuple[List[ApiKey], int]:
+    def get_all(
+        self, page: int = 1, page_size: int = 10, filters: dict = None
+    ) -> Tuple[List[ApiKey], int]:
+        """
+        Retrieves all API keys with pagination and optional filters.
+
+        Args:
+            page (int): Page number for pagination. Defaults to 1.
+            page_size (int): Number of items per page. Defaults to 10.
+            filters (dict): Optional filters for querying API keys.
+
+        Returns:
+            Tuple[List[ApiKey], int]: A tuple containing a list of API keys and the total count.
+        """
         skip = (page - 1) * page_size
         query = self.session.query(ApiKey)
-        total = query.count()
-        api_keys = query.offset(skip).limit(page_size).all()
-        return api_keys, total
 
-    def get_all_by_consumer(
-        self, consumer_id: UUID, page: int = 1, page_size: int = 10
-    ) -> Tuple[List[ApiKey], int]:
-        skip = (page - 1) * page_size
-        query = self.session.query(ApiKey).filter(ApiKey.consumer_id == consumer_id)
+        if filters:
+            for attr, value in filters.items():
+                query = query.filter(getattr(ApiKey, attr) == value)
+
         total = query.count()
         api_keys = query.offset(skip).limit(page_size).all()
         return api_keys, total
 
     def get(self, id: UUID) -> Optional[ApiKey]:
+        """
+        Retrieves an API key by its ID.
+
+        Args:
+            id (UUID): The ID of the API key.
+
+        Returns:
+            Optional[ApiKey]: The API key if found, otherwise None.
+        """
         return self.session.query(ApiKey).filter(ApiKey.id == id).first()
 
-    def get_by_provider_and_consumer(
-        self, provider_id: UUID, consumer_id: UUID
-    ) -> Optional[ApiKey]:
-        api_key = (
-            self.session.query(ApiKey)
-            .filter(
-                ApiKey.provider_id == provider_id, ApiKey.consumer_id == consumer_id
-            )
-            .first()
-        )
-        print(
-            f"Inside get_by_provider_and_consumer: Fetched API key status: {api_key.status if api_key else 'None'}"
-        )
-        return api_key
-
     def add(self, api_key: ApiKey) -> None:
+        """
+        Adds a new API key to the database.
+
+        Args:
+            api_key (ApiKey): The API key to add.
+        """
         self.session.add(api_key)
 
     def update(self, id: UUID, **kwargs: object) -> None:
+        """
+        Updates an existing API key with provided attributes.
+
+        Args:
+            id (UUID): The ID of the API key to update.
+            **kwargs (object): Attributes to update on the API key.
+        """
         api_key = self.get(id=id)
         if api_key:
             allowed_fields = {
@@ -68,6 +97,12 @@ class APIKeyRepository:
                     api_key.status = StatusEnum.inactive
 
     def delete(self, id: UUID) -> None:
+        """
+        Deletes an API key by its ID.
+
+        Args:
+            id (UUID): The ID of the API key to delete.
+        """
         api_key = self.get(id=id)
         if api_key:
             self.session.delete(api_key)
