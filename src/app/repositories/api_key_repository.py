@@ -30,6 +30,21 @@ class APIKeyRepository:
     def get(self, id: UUID) -> Optional[ApiKey]:
         return self.session.query(ApiKey).filter(ApiKey.id == id).first()
 
+    def get_by_provider_and_consumer(
+        self, provider_id: UUID, consumer_id: UUID
+    ) -> Optional[ApiKey]:
+        api_key = (
+            self.session.query(ApiKey)
+            .filter(
+                ApiKey.provider_id == provider_id, ApiKey.consumer_id == consumer_id
+            )
+            .first()
+        )
+        print(
+            f"Inside get_by_provider_and_consumer: Fetched API key status: {api_key.status if api_key else 'None'}"
+        )
+        return api_key
+
     def add(self, api_key: ApiKey) -> None:
         self.session.add(api_key)
 

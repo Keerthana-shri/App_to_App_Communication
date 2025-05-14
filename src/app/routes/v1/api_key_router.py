@@ -19,7 +19,7 @@ from src.app.services.unit_of_work import APIKeyUnitOfWork
 router = APIRouter()
 
 
-@router.post("/consumers/{consumer_id}/api-key", response_model=APIKeyResponse)
+@router.post("/consumers/{consumer_id}/api-keys", response_model=APIKeyResponse)
 def generate_api_key(
     consumer_id: UUID, request: APIKeyCreate, db: Session = Depends(get_db)
 ):
@@ -64,7 +64,8 @@ def get_all_api_keys(
 
 
 @router.get(
-    "/consumers/{consumer_id}/api-key/{api_key_id}", response_model=APIKeyDetailResponse
+    "/consumers/{consumer_id}/api-keys/{api_key_id}",
+    response_model=APIKeyDetailResponse,
 )
 def get_api_key(consumer_id: UUID, api_key_id: UUID, db: Session = Depends(get_db)):
     service = APIKeyService(
@@ -77,7 +78,7 @@ def get_api_key(consumer_id: UUID, api_key_id: UUID, db: Session = Depends(get_d
     return api_key
 
 
-@router.patch("/consumers/{consumer_id}/api-key/{api_key_id}")
+@router.patch("/consumers/{consumer_id}/api-keys/{api_key_id}")
 def update_api_key(
     consumer_id: UUID,
     api_key_id: UUID,
@@ -111,7 +112,7 @@ def update_api_key(
     return {"message": f"API key with ID {api_key_id} has been updated successfully."}
 
 
-@router.delete("/consumers/{consumer_id}/api-key/{api_key_id}")
+@router.delete("/consumers/{consumer_id}/api-keys/{api_key_id}")
 def delete_api_key(consumer_id: UUID, api_key_id: UUID, db: Session = Depends(get_db)):
     service = APIKeyService(
         uow=APIKeyUnitOfWork(session_factory=lambda: db),

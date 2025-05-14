@@ -1,30 +1,23 @@
-# App_to_App_Communication
-## Installation
-1. Clone the repository
- 
-    `git clone https://github.com/Keerthana-shri/App_to_App_Communication`
- 
-    `cd App_to_App_Communication`
 
-2. From the root directory of the project, activate the shell after installing pipenv.
+## Creating API Key:
+![alt text](image.png)
 
-   `pip install pipenv` 
+## Duplication of API Key creation is restricted when staus is active/revoked
+![alt text](image-1.png)
 
-   `pipenv install` 
+## Revoking API Key in the POST method, if the status is inanctive
+![alt text](image-6.png)
 
-   `pipenv shell`
+## Invalid messages
+![alt text](image-2.png)
 
+![alt text](image-3.png)
 
-## Run the application
+## Updateding API Key details
+![alt text](image-4.png)
 
-Change directory to src
- 
-`cd src`
- 
-Run the application with:
- 
-`uvicorn server:app --reload`
- 
-## Set up pre-commit hooks for linting
+## Get API Key (Because the updated expire date is past the current date, the status has automatically changed to inactive)
+![alt text](image-5.png)
 
-`pre-commit install`
+## Deleting API Key
+![alt text](image-7.png)

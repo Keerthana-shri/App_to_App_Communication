@@ -94,8 +94,8 @@ class Application(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String(100), nullable=False)
-    secret_hash = Column(String(255), nullable=False)
-    type = Column(Enum(AppType), nullable=False)  # provider or consumer
+    secret_hash = Column(Text, nullable=False)
+    type = Column(Enum(AppType), nullable=False)
     status = Column(Enum(StatusEnum), default=StatusEnum.active)
     comment = Column(Text)
 
@@ -121,6 +121,8 @@ class Application(Base):
         passive_deletes=True,
     )
 
+    owner = relationship("User", back_populates="applications")
+
 
 class ApiKey(Base):
     """
@@ -130,6 +132,7 @@ class ApiKey(Base):
         provider_id (UUID): Foreign key referencing the provider application.
         consumer_id (UUID): Foreign key referencing the consumer application.
         status (StatusEnum): Status of the API key.
+        api_key (str): The actual API key (unique).
         api_key_owner_id (UUID): Foreign key referencing the owner (User).
         permissions (PermissionEnum): Permissions associated with the API key.
         created_at (datetime): Timestamp when the API key was created.
@@ -151,6 +154,7 @@ class ApiKey(Base):
         UUID(as_uuid=True), ForeignKey("applications.id"), nullable=False
     )
     status = Column(Enum(StatusEnum), default=StatusEnum.active)
+    api_key = Column(String, unique=True, nullable=False)
     api_key_owner_id = Column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
     )
@@ -160,7 +164,6 @@ class ApiKey(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     expires_at = Column(DateTime(timezone=True))
     comment = Column(Text)
-    api_key = Column(String(255), unique=True, nullable=False)
 
     provider_app = relationship(
         "Application", foreign_keys=[provider_id], back_populates="provided_keys"
