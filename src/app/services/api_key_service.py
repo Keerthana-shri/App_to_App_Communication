@@ -76,6 +76,7 @@ class APIKeyService:
         Raises:
             ValueError: If any validation fails.
         """
+
         with self.uow:
             error_messages = []
 
@@ -106,7 +107,6 @@ class APIKeyService:
                 error_messages.append("Invalid user to be the owner")
             if permissions not in PermissionEnum.__members__.values():
                 permissions = PermissionEnum.read
-
             if error_messages:
                 raise ValueError(", ".join(error_messages))
 
@@ -126,26 +126,18 @@ class APIKeyService:
                         "status": existing_api_key.status,
                     }
                 elif existing_api_key.status == StatusEnum.inactive:
-                    existing_api_key.status = StatusEnum.revoked
                     self.uow.api_key.update(
-                        existing_api_key.id,
-                        **{
-                            "status": StatusEnum.revoked,
-                            "permissions": permissions,
-                            "expires_at": expires_at,
-                            "comment": comment,
-                        },
+                        existing_api_key.id, status=StatusEnum.revoked
                     )
                     return {
-                        "message": "API key details updated and status set to revoked",
+                        "message": "Its an inactive API key, now its status is set to revoked",
                         "api_key": existing_api_key.api_key,
                         "status": StatusEnum.revoked,
                     }
 
             expires_at = expires_at.replace(tzinfo=timezone.utc)
             now = datetime.now(timezone.utc)
-            is_active = now <= expires_at
-
+            status = StatusEnum.active if expires_at >= now else StatusEnum.inactive
             api_key = str(uuid4())
             encrypted_api_key = self.cipher_suite.encrypt(api_key.encode())
 
@@ -157,7 +149,7 @@ class APIKeyService:
                 api_key=encrypted_api_key.decode(),
                 expires_at=expires_at,
                 comment=comment,
-                status=StatusEnum.active if is_active else StatusEnum.inactive,
+                status=status,
                 created_at=now,
                 updated_at=None,
             )
@@ -229,11 +221,23 @@ class APIKeyService:
             dict: A message indicating the update status.
         """
         with self.uow:
+            api_key = self.uow.api_key.get(api_key_id)
+
+            if api_key.status == StatusEnum.revoked:
+                print("DEBUG: API key is revoked. Skipping update.")
+                return {
+                    "message": f"API key with ID {api_key_id} is revoked. No updates are allowed."
+                }
+
             if "expires_at" in kwargs:
                 expires_at = kwargs["expires_at"].replace(tzinfo=timezone.utc)
                 now = datetime.now(timezone.utc)
                 if expires_at < now:
                     kwargs["status"] = StatusEnum.inactive
+                else:
+                    kwargs["status"] = StatusEnum.active
+
+            print(f"DEBUG: Proceeding to update API key {api_key_id} with {kwargs}")
             self.uow.api_key.update(api_key_id, **kwargs)
             return {
                 "message": f"API key with ID {api_key_id} has been updated successfully."

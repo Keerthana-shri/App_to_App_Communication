@@ -3,7 +3,7 @@
 ## Creating API Key:
 ![alt text](image.png)
 
-## Duplication of API Key creation is restricted when staus is active/revoked
+## Duplication of API Key creation is restricted when status is active/revoked
 ![alt text](image-1.png)
 
 ## Revoking API Key in the POST method, if the status is inactive
@@ -16,8 +16,11 @@
 
 ![alt text](image-8.png)
 
-## Updateding API Key details
+## Updating API Key details
 ![alt text](image-4.png)
+
+## If status of any API key is "revoked" then updating it is not allowed
+![alt text](image-9.png)
 
 ## Get API Key (Because the updated expire date is past the current date, the status has automatically changed to inactive)
 ![alt text](image-5.png)

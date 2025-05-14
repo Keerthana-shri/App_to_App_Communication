@@ -91,10 +91,6 @@ class APIKeyRepository:
                 if key in allowed_fields:
                     setattr(api_key, key, value)
             api_key.updated_at = datetime.now(timezone.utc)
-            if "expires_at" in kwargs:
-                expires_at = kwargs["expires_at"].replace(tzinfo=timezone.utc)
-                if expires_at < api_key.updated_at:
-                    api_key.status = StatusEnum.inactive
 
     def delete(self, id: UUID) -> None:
         """

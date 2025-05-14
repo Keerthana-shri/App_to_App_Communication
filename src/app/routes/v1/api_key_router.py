@@ -43,16 +43,19 @@ def generate_api_key(
     service = APIKeyService(
         uow=APIKeyUnitOfWork(),
     )
-    response = service.generate_api_key(
-        consumer_application_id=consumer_id,
-        provider_application_id=request.provider_id,
-        secret_hash=request.secret_hash,
-        api_key_owner_id=request.api_key_owner_id,
-        permissions=request.permissions,
-        expires_at=request.expires_at,
-        comment=request.comment,
-    )
-    return response
+    try:
+        response = service.generate_api_key(
+            consumer_application_id=consumer_id,
+            provider_application_id=request.provider_id,
+            secret_hash=request.secret_hash,
+            api_key_owner_id=request.api_key_owner_id,
+            permissions=request.permissions,
+            expires_at=request.expires_at,
+            comment=request.comment,
+        )
+        return response
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/consumers/{consumer_id}/api-keys", response_model=APIKeyListResponse)
@@ -164,8 +167,7 @@ def update_api_key(
                 return {"message": "To change api_key_owner_id, go to the user table."}
             else:
                 return {"message": f"{field} cannot be changed."}
-    service.update_api_key(api_key_id, **request_data)
-    return {"message": f"API key with ID {api_key_id} has been updated successfully."}
+    return service.update_api_key(api_key_id, **request_data)
 
 
 @router.delete("/consumers/{consumer_id}/api-keys/{api_key_id}")

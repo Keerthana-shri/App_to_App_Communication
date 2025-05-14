@@ -24,7 +24,7 @@ class StatusEnum(str, Enum):
 
 
 class APIKeyCreate(BaseModel):
-    provider_id: UUID = Field(example="9b9475ad-5ca7-4b74-9b73-b732820644f9")
+    provider_id: UUID = Field(example="9384ccf4-2ca4-478c-bc38-4de5550ff052")
     secret_hash: str = Field(example="s3cr3tH@sh")
     api_key_owner_id: UUID = Field(example="072697aa-a9c8-4c5e-bb2d-c91a4f625d81")
     permissions: PermissionEnum = Field(example="read")
