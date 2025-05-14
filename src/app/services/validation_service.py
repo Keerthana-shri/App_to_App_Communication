@@ -76,7 +76,7 @@ def validate_api_key(unit_of_work: UnitOfWork, api_key: str, provider_id: UUID):
 
     Args:
         unit_of_work (UnitOfWork): Database session and repository manager.
-        api_key (str): The API key to validate.
+        api_key (str): The API key string to validate.
         provider_id (UUID): The provider application's unique identifier.
 
     Raises:
@@ -86,7 +86,8 @@ def validate_api_key(unit_of_work: UnitOfWork, api_key: str, provider_id: UUID):
         dict: Validation result including validity, expiration time, and API key owner.
     """
     with unit_of_work as uow:
-        key = uow.api_key.get_by_key(api_key)
+        
+        key = uow.api_key.get(api_key=api_key)
 
         if not key:
             raise HTTPException(status_code=404, detail="API key not found.")
@@ -105,7 +106,7 @@ def validate_api_key(unit_of_work: UnitOfWork, api_key: str, provider_id: UUID):
             "expires_at": key.expires_at,
             "api_key_owner": {
                 "id": key.api_key_owner_id,
-                "name": key.owner.name,  
-                "email": key.owner.email,  
+                "name": key.owner.name,
+                "email": key.owner.email,
             },
         }

@@ -1,116 +1,111 @@
-from typing import List, Optional
+from datetime import datetime, timezone
+from typing import List, Optional, Tuple
 from uuid import UUID
 
-from src.app.repositories.base_repository import BaseRepository
-from src.app.models.data_models import ApiKey, PermissionEnum
+from sqlalchemy.orm import Session
+
+from src.app.models.data_models import ApiKey, StatusEnum
 
 
-class APIKeyRepository(BaseRepository[ApiKey]):
+class APIKeyRepository:
     """
-    A repository class for ApiKey model.
-    It provides methods to perform CRUD operations on ApiKey data.
+    Repository class for managing API keys in the database.
+
+    Attributes:
+        session (Session): SQLAlchemy session for database operations.
     """
+
+    def __init__(self, session: Session):
+        """
+        Initializes the APIKeyRepository with a database session.
+
+        Args:
+            session (Session): SQLAlchemy session for database operations.
+        """
+        self.session = session
 
     def get_all(
-        self,
-        consumer_application_id: Optional[UUID] = None,
-        provider_application_id: Optional[UUID] = None,
-        is_active: Optional[bool] = None,
-        permissions: Optional[PermissionEnum] = None,
-        page: int = 1,
-        page_size: int = 10,
-    ) -> List[ApiKey]:
+        self, page: int = 1, page_size: int = 10, filters: dict = None
+    ) -> Tuple[List[ApiKey], int]:
         """
-        Retrieve a paginated list of API keys based on the provided filters.
+        Retrieves all API keys with pagination and optional filters.
 
         Args:
-            consumer_application_id (Optional[UUID]): Filter by consumer application ID.
-            provider_application_id (Optional[UUID]): Filter by provider application ID.
-            is_active (Optional[bool]): Filter by active status.
-            permissions (Optional[PermissionEnum]): Filter by permissions.
-            page (int): The page number for pagination (default is 1).
-            page_size (int): The number of items per page (default is 10).
+            page (int): Page number for pagination. Defaults to 1.
+            page_size (int): Number of items per page. Defaults to 10.
+            filters (dict): Optional filters for querying API keys.
 
         Returns:
-            List[ApiKey]: A list of ApiKey objects matching the filters.
+            Tuple[List[ApiKey], int]: A tuple containing a list of API keys and the total count.
         """
+        skip = (page - 1) * page_size
         query = self.session.query(ApiKey)
 
-        if consumer_application_id:
-            query = query.filter(ApiKey.consumer_application_id == consumer_application_id)
-        if provider_application_id:
-            query = query.filter(ApiKey.provider_application_id == provider_application_id)
-        if is_active is not None:
-            query = query.filter(ApiKey.is_active == is_active)
-        if permissions:
-            query = query.filter(ApiKey.permissions == permissions)
+        if filters:
+            for attr, value in filters.items():
+                query = query.filter(getattr(ApiKey, attr) == value)
 
-        query = query.offset((page - 1) * page_size).limit(page_size)
+        total = query.count()
+        api_keys = query.offset(skip).limit(page_size).all()
+        return api_keys, total
 
-        return query.all()
-
-    def get(self, id: UUID) -> Optional[ApiKey]:
+    def get(
+        self, id: Optional[UUID] = None, api_key: Optional[str] = None
+    ) -> Optional[ApiKey]:
         """
-        Retrieve a single API key by its ID.
+        Retrieve an API key by its ID or API key string.
 
         Args:
-            id (UUID): The unique identifier of the API key.
+            id (Optional[UUID]): The unique identifier of the API key.
+            api_key (Optional[str]): The API key string.
 
         Returns:
             Optional[ApiKey]: The ApiKey object if found, otherwise None.
         """
-        return self.session.query(ApiKey).filter(ApiKey.id == id).first()
+        query = self.session.query(ApiKey)
+        if id:
+            query = query.filter(ApiKey.id == id)
+        if api_key:
+            query = query.filter(ApiKey.api_key == api_key)
+        return query.first()
 
-    def get_by_key(self, key: str) -> Optional[ApiKey]:
+    def add(self, api_key: ApiKey) -> None:
         """
-        Retrieve an API key by its key value.
+        Adds a new API key to the database.
 
         Args:
-            key (str): The API key value.
-
-        Returns:
-            Optional[ApiKey]: The ApiKey object if found, otherwise None.
+            api_key (ApiKey): The API key to add.
         """
-        return self.session.query(ApiKey).filter(ApiKey.api_key == key).first()
-
-    def add(self, **kwargs: object) -> None:
-        """
-        Add a new API key to the database.
-
-        Args:
-            **kwargs (object): The attributes of the API key to be created.
-
-        Returns:
-            None
-        """
-        api_key = ApiKey(**kwargs)
         self.session.add(api_key)
 
     def update(self, id: UUID, **kwargs: object) -> None:
         """
-        Update an existing API key with new attributes.
+        Updates an existing API key with provided attributes.
 
         Args:
-            id (UUID): The unique identifier of the API key to update.
-            **kwargs (object): The attributes to update.
-
-        Returns:
-            None
+            id (UUID): The ID of the API key to update.
+            **kwargs (object): Attributes to update on the API key.
         """
         api_key = self.get(id=id)
         if api_key:
+            allowed_fields = {
+                "status",
+                "permissions",
+                "expires_at",
+                "comment",
+                "api_key",
+            }
             for key, value in kwargs.items():
-                setattr(api_key, key, value)
+                if key in allowed_fields:
+                    setattr(api_key, key, value)
+            api_key.updated_at = datetime.now(timezone.utc)
 
     def delete(self, id: UUID) -> None:
         """
-        Delete an API key from the database.
+        Deletes an API key by its ID.
 
         Args:
-            id (UUID): The unique identifier of the API key to delete.
-
-        Returns:
-            None
+            id (UUID): The ID of the API key to delete.
         """
         api_key = self.get(id=id)
         if api_key:
