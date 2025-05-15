@@ -119,21 +119,11 @@ class APIKeyService:
             existing_api_key = existing_api_keys[0] if existing_api_keys else None
 
             if existing_api_key:
-                if existing_api_key.status in [StatusEnum.active, StatusEnum.revoked]:
-                    return {
-                        "message": "API key for this provider ID and consumer ID is already available",
-                        "api_key": existing_api_key.api_key,
-                        "status": existing_api_key.status,
-                    }
-                elif existing_api_key.status == StatusEnum.inactive:
-                    self.uow.api_key.update(
-                        existing_api_key.id, status=StatusEnum.revoked
-                    )
-                    return {
-                        "message": "Its an inactive API key, now its status is set to revoked",
-                        "api_key": existing_api_key.api_key,
-                        "status": StatusEnum.revoked,
-                    }
+                return {
+                    "message": "API key for this provider ID and consumer ID is already available",
+                    "api_key": existing_api_key.api_key,
+                    "status": existing_api_key.status,
+                }
 
             expires_at = expires_at.replace(tzinfo=timezone.utc)
             now = datetime.now(timezone.utc)
