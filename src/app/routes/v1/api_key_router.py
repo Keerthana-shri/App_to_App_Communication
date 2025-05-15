@@ -1,10 +1,7 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, HTTPException, Query
 
-from src.app.config.database import get_db
-from src.app.config.settings import app_config
 from src.app.schemas.api_key_schema import (
     APIKeyCreate,
     APIKeyDetailResponse,
@@ -13,15 +10,13 @@ from src.app.schemas.api_key_schema import (
     APIKeyUpdate,
 )
 from src.app.services.api_key_service import APIKeyService
-from src.app.services.unit_of_work import APIKeyUnitOfWork
+from src.app.services.unit_of_work import UnitOfWork
 
 router = APIRouter(tags=["Consumer"])
 
 
 @router.post("/consumers/{consumer_id}/api-keys", response_model=APIKeyResponse)
-def generate_api_key(
-    consumer_id: UUID, request: APIKeyCreate, db: Session = Depends(get_db)
-):
+def generate_api_key(consumer_id: UUID, request: APIKeyCreate):
     """**Generates an API key for a consumer application.**
 
     This endpoint handles the creation of a new API key for a consumer application. It validates the provided details and securely generates the API key.
@@ -30,7 +25,6 @@ def generate_api_key(
 
         consumer_id (UUID): The ID of the consumer application.
         request (APIKeyCreate): The request payload containing API key details.
-        db (Session): The database session dependency.
 
     **Returns:**
 
@@ -41,7 +35,7 @@ def generate_api_key(
         HTTPException: If validation fails or any error occurs during API key generation.
     """
     service = APIKeyService(
-        uow=APIKeyUnitOfWork(),
+        uow=UnitOfWork(),
     )
     try:
         response = service.generate_api_key(
@@ -63,7 +57,6 @@ def get_all_api_keys(
     consumer_id: UUID,
     page: int = Query(1),
     page_size: int = Query(10),
-    db: Session = Depends(get_db),
 ):
     """**Retrieves all API keys for a consumer application.**
 
@@ -74,7 +67,6 @@ def get_all_api_keys(
         consumer_id (UUID): The ID of the consumer application.
         page (int): The page number for pagination.
         page_size (int): The number of items per page.
-        db (Session): The database session dependency.
 
     **Returns:**
 
@@ -84,7 +76,7 @@ def get_all_api_keys(
 
         HTTPException: If any error occurs during retrieval.
     """
-    service = APIKeyService(uow=APIKeyUnitOfWork())
+    service = APIKeyService(uow=UnitOfWork())
     response = service.get_all_api_keys(
         consumer_id=consumer_id, page=page, page_size=page_size
     )
@@ -95,7 +87,7 @@ def get_all_api_keys(
     "/consumers/{consumer_id}/api-keys/{api_key_id}",
     response_model=APIKeyDetailResponse,
 )
-def get_api_key(consumer_id: UUID, api_key_id: UUID, db: Session = Depends(get_db)):
+def get_api_key(consumer_id: UUID, api_key_id: UUID):
     """**Retrieves a specific API key for a consumer application.**
 
     This endpoint fetches details of a specific API key associated with a consumer application.
@@ -104,7 +96,6 @@ def get_api_key(consumer_id: UUID, api_key_id: UUID, db: Session = Depends(get_d
 
         consumer_id (UUID): The ID of the consumer application.
         api_key_id (UUID): The ID of the API key.
-        db (Session): The database session dependency.
 
     **Returns:**
 
@@ -114,7 +105,7 @@ def get_api_key(consumer_id: UUID, api_key_id: UUID, db: Session = Depends(get_d
 
         HTTPException: If the API key is not found.
     """
-    service = APIKeyService(uow=APIKeyUnitOfWork())
+    service = APIKeyService(uow=UnitOfWork())
     api_key = service.get_api_key(api_key_id)
     if not api_key:
         raise HTTPException(status_code=404, detail="API key not found")
@@ -126,7 +117,6 @@ def update_api_key(
     consumer_id: UUID,
     api_key_id: UUID,
     request: APIKeyUpdate,
-    db: Session = Depends(get_db),
 ):
     """**Updates an existing API key for a consumer application.**
 
@@ -137,7 +127,6 @@ def update_api_key(
         consumer_id (UUID): The ID of the consumer application.
         api_key_id (UUID): The ID of the API key.
         request (APIKeyUpdate): The request payload containing updated API key details.
-        db (Session): The database session dependency.
 
     **Returns:**
 
@@ -147,7 +136,7 @@ def update_api_key(
 
         HTTPException: If any error occurs during the update.
     """
-    service = APIKeyService(uow=APIKeyUnitOfWork())
+    service = APIKeyService(uow=UnitOfWork())
     restricted_fields = {
         "provider_id",
         "consumer_id",
@@ -171,7 +160,7 @@ def update_api_key(
 
 
 @router.delete("/consumers/{consumer_id}/api-keys/{api_key_id}")
-def delete_api_key(consumer_id: UUID, api_key_id: UUID, db: Session = Depends(get_db)):
+def delete_api_key(consumer_id: UUID, api_key_id: UUID):
     """**Deletes an API key for a consumer application.**
 
     This endpoint handles the deletion of a specific API key associated with a consumer application.
@@ -180,7 +169,6 @@ def delete_api_key(consumer_id: UUID, api_key_id: UUID, db: Session = Depends(ge
 
         consumer_id (UUID): The ID of the consumer application.
         api_key_id (UUID): The ID of the API key.
-        db (Session): The database session dependency.
 
     **Returns:**
 
@@ -190,5 +178,5 @@ def delete_api_key(consumer_id: UUID, api_key_id: UUID, db: Session = Depends(ge
 
         HTTPException: If any error occurs during deletion.
     """
-    service = APIKeyService(uow=APIKeyUnitOfWork())
+    service = APIKeyService(uow=UnitOfWork())
     return service.delete_api_key(api_key_id)

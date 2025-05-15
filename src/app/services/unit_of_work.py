@@ -54,27 +54,14 @@ class BaseUnitOfWork(ABC):
         self.session.rollback()
 
 
-class APIKeyUnitOfWork(BaseUnitOfWork):
-    """Unit of Work for managing APIKey-related database transactions."""
+class UnitOfWork(BaseUnitOfWork):
+    """
+    A Unit of Work implementation for managing database transactions
+    """
 
     def __enter__(self):
         super().__enter__()
         self.api_key = APIKeyRepository(session=self.session)
         self.application = ApplicationRepository(session=self.session)
         self.user = UserRepository(session=self.session)
-        return self
-
-
-class UnitOfWork(BaseUnitOfWork):
-    """
-    A Unit of Work implementation for managing database transactions related to groups.
-    """
-
-    def __enter__(self):
-        """
-        Enter the runtime context, initializing a new database session and repositories.
-        """
-        super().__enter__()
-        self.user = UserRepository(session=self.session)
-        self.application = ApplicationRepository(session=self.session)
         return self

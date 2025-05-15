@@ -6,7 +6,7 @@ from cryptography.fernet import Fernet
 from src.app.config.settings import app_config
 from src.app.models.data_models import ApiKey, PermissionEnum, StatusEnum
 from src.app.schemas.api_key_schema import APIKeyDetailResponse, APIKeyListResponse
-from src.app.services.unit_of_work import APIKeyUnitOfWork
+from src.app.services.unit_of_work import UnitOfWork
 
 
 class APIKeyService:
@@ -14,16 +14,16 @@ class APIKeyService:
     Service class for managing API keys.
 
     Attributes:
-        uow (APIKeyUnitOfWork): Unit of work for API key operations.
+        uow (UnitOfWork): Unit of work for API key operations.
         cipher_suite (Fernet): Cipher suite for encrypting API keys.
     """
 
-    def __init__(self, uow: APIKeyUnitOfWork):
+    def __init__(self, uow: UnitOfWork):
         """
         Initializes the APIKeyService with a unit of work.
 
         Args:
-            uow (APIKeyUnitOfWork): Unit of work for API key operations.
+            uow (UnitOfWork): Unit of work for API key operations.
         """
         self.uow = uow
         self.cipher_suite = Fernet(app_config["ENCRYPTION_KEY"])
