@@ -4,7 +4,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from src.app.models.data_models import ApiKey, StatusEnum
+from src.app.models.data_models import ApiKey
 
 
 class APIKeyRepository:
@@ -50,7 +50,11 @@ class APIKeyRepository:
         return api_keys, total
 
     def get(
-        self, id: Optional[UUID] = None, api_key: Optional[str] = None
+        self,
+        id: Optional[UUID] = None,
+        api_key: Optional[str] = None,
+        provider_id: Optional[UUID] = None,
+        consumer_id: Optional[UUID] = None,
     ) -> Optional[ApiKey]:
         """
         Retrieve an API key by its ID or API key string.
@@ -58,6 +62,8 @@ class APIKeyRepository:
         Args:
             id (Optional[UUID]): The unique identifier of the API key.
             api_key (Optional[str]): The API key string.
+            provider_id (Optional[UUID]): The unique identifier of the provider.
+            consumer_id (Optional[UUID]): The unique identifier of the consumer.
 
         Returns:
             Optional[ApiKey]: The ApiKey object if found, otherwise None.
@@ -67,6 +73,10 @@ class APIKeyRepository:
             query = query.filter(ApiKey.id == id)
         if api_key:
             query = query.filter(ApiKey.api_key == api_key)
+        if provider_id:
+            query = query.filter(ApiKey.provider_id == provider_id)
+        if consumer_id:
+            query = query.filter(ApiKey.consumer_id == consumer_id)
         return query.first()
 
     def add(self, api_key: ApiKey) -> None:

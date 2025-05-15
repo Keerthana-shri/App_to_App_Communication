@@ -4,6 +4,8 @@ from fastapi import APIRouter, Query
 
 import src.app.services.consumer_services as consumer_services
 from src.app.schemas.consumer_schemas import (
+    ApiKeyRequest,
+    ApiKeyResponse,
     ConsumerDetailsResponse,
     ConsumerRegisterRequest,
     ConsumerUpdateRequest,
@@ -92,6 +94,44 @@ def get_consumer(consumer_id: UUID):
     return consumer_services.get_consumer_by_id(
         unit_of_work=unit_of_work,
         consumer_id=consumer_id,
+    )
+
+
+@router.post("/consumers/{consumer_id}/get-api", response_model=ApiKeyResponse)
+def get_api_key(
+    consumer_id: UUID,
+    data: ApiKeyRequest,
+):
+    """
+    Fetches the API key for a registered consumer application.
+
+    This endpoint retrieves the API key associated with a specific consumer application using its unique identifier.
+
+    Args:
+
+        consumer_id (UUID):
+            The unique identifier of the consumer application.
+
+        data (ApiKeyRequest):
+            The request payload containing the application secret and provider ID.
+
+    Returns:
+
+        ApiKeyResponse:
+            The API key of the requested consumer application.
+
+    Raises:
+
+        HTTPException:
+            If the consumer application is not found.
+    """
+
+    unit_of_work = UnitOfWork()
+
+    return consumer_services.get_api_key(
+        unit_of_work=unit_of_work,
+        consumer_id=consumer_id,
+        data=data,
     )
 
 

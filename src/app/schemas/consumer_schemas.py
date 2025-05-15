@@ -171,3 +171,31 @@ class PaginatedResponse(BaseModel):
     next_page: Optional[int]
     page_size: int
     items: list[ConsumerDetailsResponse]
+
+
+class ApiKeyResponse(BaseModel):
+    """
+    Represents the response model for API key details.
+
+    Attributes:
+        x_api_key (str): The generated API key of provider for the consumer.
+    """
+
+    x_api_key: str
+
+
+class ApiKeyRequest(BaseModel):
+    """
+    Represents the request model for API key details.
+
+    Attributes:
+        application_secret (UUID4): The consumer secret key for authentication.
+        provider_id (UUID4): The unique identifier of the provider application.
+    """
+
+    application_secret: UUID4 = Field(
+        default_factory=uuid.uuid4, example=str(uuid.uuid4())
+    )
+    provider_id: UUID4 = Field(
+        default_factory=uuid.uuid4, example="40d46134-a885-4e17-91ce-0be66ce832ff"
+    )

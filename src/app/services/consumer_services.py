@@ -7,6 +7,8 @@ from passlib.hash import bcrypt
 
 from src.app.config.settings import app_config
 from src.app.schemas.consumer_schemas import (
+    ApiKeyRequest,
+    ApiKeyResponse,
     ConsumerDetailsResponse,
     ConsumerRegisterRequest,
     ConsumerUpdateRequest,
@@ -160,6 +162,90 @@ def get_consumer_by_id(unit_of_work: UnitOfWork, consumer_id: UUID):
         )
 
     return consumer
+
+
+def get_api_key(
+    unit_of_work: UnitOfWork, consumer_id: UUID, data: ApiKeyRequest
+) -> ApiKeyResponse:
+    """
+    Retrieves an API key for a consumer application interacting with a provider application.
+
+    Args:
+        unit_of_work (UnitOfWork): The database transaction handler.
+        consumer_id (UUID): The unique identifier of the consumer application.
+        data (ApiKeyRequest): Request body containing the provider ID and application secret.
+
+    Returns:
+        ApiKeyResponse: Contains the API key if validation succeeds.
+
+    Raises:
+        HTTPException: If the consumer application is not found (404).
+        HTTPException: If the application type is not "consumer" (403).
+        HTTPException: If the provided application secret is invalid (403).
+        HTTPException: If the provider application is not found (404).
+        HTTPException: If the provider type is not "provider" (403).
+        HTTPException: If the API key does not exist (404).
+        HTTPException: If the API key is inactive (403).
+        HTTPException: If the API key has been revoked (403).
+    """
+    with unit_of_work as uow:
+        # Fetch the consumer application by ID
+        consumer = uow.application.get(id=consumer_id)
+
+        if not consumer:
+            raise HTTPException(
+                status_code=404, detail="Consumer application not found."
+            )
+
+        # Check if the application is a consumer
+        if consumer.type.value != "consumer":
+            raise HTTPException(
+                status_code=403, detail="Cannot access a non-consumer application."
+            )
+
+        if (
+            str(data.application_secret)
+            != cipher_suite.decrypt(consumer.secret_hash).decode()
+        ):
+            raise HTTPException(status_code=403, detail="Invalid application secret.")
+
+        # Check if the provider application exists
+        provider = uow.application.get(id=data.provider_id)
+        if not provider:
+            raise HTTPException(
+                status_code=404, detail="Provider application not found."
+            )
+
+        # Check if the provider application is of type "provider"
+        if provider.type.value != "provider":
+            raise HTTPException(
+                status_code=403,
+                detail="Given provider id is not registered as provider.",
+            )
+
+        api_key_record = uow.api_key.get(
+            consumer_id=consumer.id,
+            provider_id=provider.id,
+        )
+
+        # Check if the API key exists for the given consumer and provider
+        if not api_key_record:
+            raise HTTPException(
+                status_code=404,
+                detail="API key not found for the given consumer and provider.",
+            )
+
+        # Check if the API key is active
+        if api_key_record.status.value == "inactive":
+            raise HTTPException(status_code=403, detail="API key is not active.")
+
+        # Check if the API key is revoked
+        if api_key_record.status.value == "revoked":
+            raise HTTPException(status_code=403, detail="API key has been revoked.")
+
+        api_key = ApiKeyResponse(x_api_key=api_key_record.api_key)
+
+    return api_key
 
 
 def update_consumer(
