@@ -10,6 +10,7 @@ from src.app.repositories.base_repository import BaseRepository
 class ApplicationRepository(BaseRepository[Application]):
     """
     Repository class for handling application-related database operations.
+    Repository class for handling application-related database operations.
     """
 
     def get_all(
@@ -38,6 +39,14 @@ class ApplicationRepository(BaseRepository[Application]):
         if name:
             query = query.filter(Application.name == name)
 
+        if type:
+            query = query.filter(Application.type == type)
+
+        sort_column = getattr(Application, sort_by, None)
+        if sort_column:
+            query = query.order_by(
+                asc(sort_column) if order == "asc" else desc(sort_column)
+            )
         if type:
             query = query.filter(Application.type == type)
 

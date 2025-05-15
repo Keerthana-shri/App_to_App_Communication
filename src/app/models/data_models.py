@@ -121,12 +121,11 @@ class Application(Base):
         passive_deletes=True,
     )
 
-    owner = relationship("User", back_populates="applications")
-
 
 class ApiKey(Base):
     """
     Represents an API key in the system.
+
     Attributes:
         id (UUID): Primary key.
         provider_id (UUID): Foreign key referencing the provider application.
