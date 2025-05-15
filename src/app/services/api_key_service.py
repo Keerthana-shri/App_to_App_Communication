@@ -45,7 +45,7 @@ class APIKeyService:
         if not consumer_app:
             raise ValueError("Invalid consumer application ID")
 
-        if secret_hash != consumer_app.secret_hash:
+        if secret_hash != self.cipher_suite.decrypt(consumer_app.secret_hash).decode():
             raise ValueError("Invalid secret hash")
 
     def generate_api_key(
