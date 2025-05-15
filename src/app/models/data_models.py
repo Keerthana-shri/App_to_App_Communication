@@ -70,9 +70,6 @@ class User(Base):
     applications = relationship("Application", back_populates="owner")
     api_keys = relationship("ApiKey", back_populates="owner")
 
-    applications = relationship("Application", back_populates="owner")
-    api_keys = relationship("ApiKey", back_populates="owner")
-
 
 class Application(Base):
     """
