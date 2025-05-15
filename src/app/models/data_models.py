@@ -1,11 +1,13 @@
-import uuid
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum, Text
-from sqlalchemy.orm import relationship, declarative_base
-from sqlalchemy.sql import func
 import enum
+import uuid
+
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.sql import func
 
 Base = declarative_base()
+
 
 class AppType(enum.Enum):
     """
@@ -13,8 +15,10 @@ class AppType(enum.Enum):
     - provider: Application providing services.
     - consumer: Application consuming services.
     """
+
     provider = "provider"
     consumer = "consumer"
+
 
 class StatusEnum(enum.Enum):
     """
@@ -23,9 +27,11 @@ class StatusEnum(enum.Enum):
     - inactive: Entity is inactive.
     - revoked: Entity access has been revoked.
     """
+
     active = "active"
     inactive = "inactive"
     revoked = "revoked"
+
 
 class PermissionEnum(enum.Enum):
     """
@@ -34,14 +40,15 @@ class PermissionEnum(enum.Enum):
     - write: Write access.
     - both: For Read-Write both access.
     """
+
     read = "read"
     write = "write"
     both = "both"
 
+
 class User(Base):
     """
     Represents a user in the system.
-
     Attributes:
         id (UUID): Primary key.
         name (str): Name of the user.
@@ -51,7 +58,8 @@ class User(Base):
         applications (list): List of applications owned by the user.
         api_keys (list): List of API keys owned by the user.
     """
-    __tablename__ = 'users'
+
+    __tablename__ = "users"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String(100), nullable=False)
@@ -62,10 +70,13 @@ class User(Base):
     applications = relationship("Application", back_populates="owner")
     api_keys = relationship("ApiKey", back_populates="owner")
 
+    applications = relationship("Application", back_populates="owner")
+    api_keys = relationship("ApiKey", back_populates="owner")
+
+
 class Application(Base):
     """
     Represents an application in the system.
-
     Attributes:
         id (UUID): Primary key.
         name (str): Name of the application.
@@ -81,30 +92,44 @@ class Application(Base):
         consumed_keys (list): API keys consumed by the application.
         logs (list): Logs associated with the application.
     """
-    __tablename__ = 'applications'
+
+    __tablename__ = "applications"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String(100), nullable=False)
-    secret_hash = Column(String(255), nullable=False)
-    type = Column(Enum(AppType), nullable=False)  # provider or consumer
+    secret_hash = Column(Text, nullable=False)
+    type = Column(Enum(AppType), nullable=False)
     status = Column(Enum(StatusEnum), default=StatusEnum.active)
     comment = Column(Text)
 
-    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
     created_at = Column(DateTime(timezone=True), default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
+    owner = relationship("User", back_populates="applications", passive_deletes=True)
+
+    provided_keys = relationship(
+        "ApiKey", back_populates="provider_app", foreign_keys="ApiKey.provider_id"
+    )
+    consumed_keys = relationship(
+        "ApiKey", back_populates="consumer_app", foreign_keys="ApiKey.consumer_id"
+    )
+
+    logs = relationship(
+        "Log",
+        back_populates="application",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
     owner = relationship("User", back_populates="applications")
 
-    provided_keys = relationship("ApiKey", back_populates="provider_app", foreign_keys='ApiKey.provider_id')
-    consumed_keys = relationship("ApiKey", back_populates="consumer_app", foreign_keys='ApiKey.consumer_id')
-
-    logs = relationship("Log", back_populates="application")
 
 class ApiKey(Base):
     """
     Represents an API key in the system.
-
     Attributes:
         id (UUID): Primary key.
         provider_id (UUID): Foreign key referencing the provider application.
@@ -121,14 +146,21 @@ class ApiKey(Base):
         consumer_app (Application): The consumer application associated with the API key.
         owner (User): The user who owns the API key.
     """
-    __tablename__ = 'api_keys'
+
+    __tablename__ = "api_keys"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    provider_id = Column(UUID(as_uuid=True), ForeignKey('applications.id'), nullable=False)
-    consumer_id = Column(UUID(as_uuid=True), ForeignKey('applications.id'), nullable=False)
+    provider_id = Column(
+        UUID(as_uuid=True), ForeignKey("applications.id"), nullable=False
+    )
+    consumer_id = Column(
+        UUID(as_uuid=True), ForeignKey("applications.id"), nullable=False
+    )
     status = Column(Enum(StatusEnum), default=StatusEnum.active)
     api_key = Column(String, unique=True, nullable=False)
-    api_key_owner_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
+    api_key_owner_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
     permissions = Column(Enum(PermissionEnum), nullable=False)
 
     created_at = Column(DateTime(timezone=True), default=func.now())
@@ -136,14 +168,18 @@ class ApiKey(Base):
     expires_at = Column(DateTime(timezone=True))
     comment = Column(Text)
 
-    provider_app = relationship("Application", foreign_keys=[provider_id], back_populates="provided_keys")
-    consumer_app = relationship("Application", foreign_keys=[consumer_id], back_populates="consumed_keys")
+    provider_app = relationship(
+        "Application", foreign_keys=[provider_id], back_populates="provided_keys"
+    )
+    consumer_app = relationship(
+        "Application", foreign_keys=[consumer_id], back_populates="consumed_keys"
+    )
     owner = relationship("User", back_populates="api_keys")
+
 
 class Log(Base):
     """
     Represents a log entry in the system.
-
     Attributes:
         id (UUID): Primary key.
         application_id (UUID): Foreign key referencing the application.
@@ -152,10 +188,15 @@ class Log(Base):
         updated_at (datetime): Timestamp when the log entry was last updated.
         application (Application): The application associated with the log entry.
     """
-    __tablename__ = 'logs'
+
+    __tablename__ = "logs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    application_id = Column(UUID(as_uuid=True), ForeignKey('applications.id'), nullable=False)
+    application_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("applications.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     description = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

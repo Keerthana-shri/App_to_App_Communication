@@ -1,10 +1,9 @@
 from abc import ABC
-from fastapi import Depends
 
 from src.app.config.database import get_db
+from src.app.repositories.api_key_repository import APIKeyRepository
 from src.app.repositories.application_repository import ApplicationRepository
 from src.app.repositories.user_repository import UserRepository
-from src.app.repositories.api_key_repository import APIKeyRepository
 
 
 class BaseUnitOfWork(ABC):
@@ -55,24 +54,12 @@ class BaseUnitOfWork(ABC):
         self.session.rollback()
 
 
-class UnitOfWork(BaseUnitOfWork):
-    """
-    A Unit of Work implementation for managing database transactions related to validation.
-    """
+class APIKeyUnitOfWork(BaseUnitOfWork):
+    """Unit of Work for managing APIKey-related database transactions."""
 
     def __enter__(self):
-        """
-        Enter the runtime context, initializing a new database session and repositories.
-        """
         super().__enter__()
-        self.user = UserRepository(session=self.session)
-        self.application = ApplicationRepository(session=self.session)
         self.api_key = APIKeyRepository(session=self.session)
+        self.application = ApplicationRepository(session=self.session)
+        self.user = UserRepository(session=self.session)
         return self
-
-
-def get_unit_of_work():
-    """
-    Dependency wrapper for UnitOfWork to avoid exposing session_factory in Swagger.
-    """
-    return UnitOfWork()
