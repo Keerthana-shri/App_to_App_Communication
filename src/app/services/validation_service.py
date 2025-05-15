@@ -19,7 +19,26 @@ cipher_suite = Fernet(ENCRYPTION_KEY)
 
 def validate_consumer_app(unit_of_work: UnitOfWork, request: ConsumerValidationRequest):
     """
-    Validates the consumer app by checking its presence and verifying the secret hash.
+    Validates the consumer application.
+
+    This function checks the following:
+    1. Whether the consumer application exists in the database.
+    2. Whether the provided secret hash matches the decrypted secret hash stored in the database.
+    3. Whether the application type is "consumer".
+
+    Args:
+
+        unit_of_work (UnitOfWork): The unit of work instance for database operations.
+        request (ConsumerValidationRequest): The request object containing consumer_id and secret_hash.
+
+    Returns:
+
+        dict: A success message if validation passes.
+
+    Raises:
+    
+        HTTPException: If the consumer application is not found, the secret hash is invalid, 
+                       or the application type is not "consumer".
     """
     with unit_of_work as uow:
         consumer_app = uow.application.get(id=request.consumer_id)
@@ -51,7 +70,23 @@ def validate_consumer_app(unit_of_work: UnitOfWork, request: ConsumerValidationR
 
 def validate_provider_app(unit_of_work: UnitOfWork, request: ProviderValidationRequest):
     """
-    Validates the provider app by checking its presence, type, and verifying the secret hash.
+    Validates the provider application.
+
+    This function checks the following:
+    1. Whether the provider application exists in the database.
+    2. Whether the provided secret hash matches the decrypted secret hash stored in the database.
+    3. Whether the application type is "provider".
+
+    Args:
+        unit_of_work (UnitOfWork): The unit of work instance for database operations.
+        request (ProviderValidationRequest): The request object containing provider_id and secret_hash.
+
+    Returns:
+        dict: A success message if validation passes.
+
+    Raises:
+        HTTPException: If the provider application is not found, the secret hash is invalid, 
+                       or the application type is not "provider".
     """
     with unit_of_work as uow:
         provider_app = uow.application.get(id=request.provider_id)
@@ -84,7 +119,23 @@ def validate_provider_app(unit_of_work: UnitOfWork, request: ProviderValidationR
 
 def validate_api_key(unit_of_work: UnitOfWork, request: ApiKeyValidationRequest):
     """
-    Validates the API key by checking its presence, status, association with the provider app, and owner.
+    Validates the API key.
+
+    This function checks the following:
+    1. Whether the API key exists in the database.
+    2. Whether the API key is active.
+    3. Whether the API key is associated with the specified provider application.
+    4. Retrieves the owner details of the API key.
+
+    Args:
+        unit_of_work (UnitOfWork): The unit of work instance for database operations.
+        request (ApiKeyValidationRequest): The request object containing api_key and provider_id.
+
+    Returns:
+        dict: A dictionary containing the validation status, expiration date, and API key owner details.
+
+    Raises:
+        HTTPException: If the API key is not found, is inactive, or is not associated with the specified provider application.
     """
     with unit_of_work as uow:
         key = uow.api_key.get(api_key=request.api_key)
