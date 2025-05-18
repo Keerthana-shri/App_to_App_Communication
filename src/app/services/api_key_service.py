@@ -7,6 +7,7 @@ from src.app.config.settings import app_config
 from src.app.models.data_models import ApiKey, PermissionEnum, StatusEnum
 from src.app.schemas.api_key_schema import APIKeyDetailResponse, APIKeyListResponse
 from src.app.services.unit_of_work import UnitOfWork
+from src.app.services.logging_service import log_activity
 
 
 class APIKeyService:
@@ -146,6 +147,14 @@ class APIKeyService:
 
             self.uow.api_key.add(api_key_entry)
 
+            self.uow.session.commit()
+
+            log_activity(
+            unit_of_work=self.uow,
+            application_id=consumer_application_id,
+            description=f"API key created for consumer '{consumer_application_id}' and provider '{provider_application_id}' with permissions: {permissions}.",
+        )
+
             return {
                 "message": "API key generated successfully",
                 "api_key": encrypted_api_key.decode(),
@@ -229,6 +238,13 @@ class APIKeyService:
 
             print(f"DEBUG: Proceeding to update API key {api_key_id} with {kwargs}")
             self.uow.api_key.update(api_key_id, **kwargs)
+
+            log_activity(
+            unit_of_work=self.uow,
+            application_id=api_key.consumer_id,
+            description=f"API key '{api_key_id}' updated with details: {kwargs}.",
+        )
+            
             return {
                 "message": f"API key with ID {api_key_id} has been updated successfully."
             }

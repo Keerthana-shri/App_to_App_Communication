@@ -16,6 +16,7 @@ from src.app.schemas.consumer_schemas import (
     Response,
 )
 from src.app.services.unit_of_work import UnitOfWork
+from src.app.services.logging_service import log_activity
 
 ENCRYPTION_KEY = app_config["ENCRYPTION_KEY"]
 cipher_suite = Fernet(ENCRYPTION_KEY)
@@ -56,6 +57,14 @@ def register_consumer(unit_of_work: UnitOfWork, data: ConsumerRegisterRequest):
             type="consumer",
             user_id=data.user_id,
             comment=data.comments,
+        )
+
+        uow.session.commit()
+
+        log_activity(
+            unit_of_work=uow,
+            application_id=data.application_guid,
+            description=f"Consumer application '{data.application_name}' registered with details: {data.dict()}",
         )
 
     return {"message": "Application successfully registered."}
@@ -273,6 +282,12 @@ def update_consumer(
 
         uow.application.update(consumer_id, **update_data)
 
+        log_activity(
+            unit_of_work=uow,
+            application_id=consumer_id,
+            description=f"Consumer application '{consumer.name}' updated with details: {update_data}",
+        )
+
         return {"message": "Application successfully updated."}
 
 
@@ -294,5 +309,11 @@ def delete_consumer(unit_of_work: UnitOfWork, consumer_id: UUID) -> Response:
             )
 
         uow.application.delete(consumer_id)
+
+        log_activity(
+            unit_of_work=uow,
+            application_id=consumer_id,
+            description=f"Consumer application '{consumer.name}' deleted.",
+        )
 
         return {"message": "Application successfully deleted."}

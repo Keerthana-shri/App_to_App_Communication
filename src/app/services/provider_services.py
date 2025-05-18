@@ -13,6 +13,7 @@ from src.app.schemas.provider_schemas import (
     Response,
 )
 from src.app.services.unit_of_work import UnitOfWork
+from src.app.services.logging_service import log_activity
 
 ENCRYPTION_KEY = app_config["ENCRYPTION_KEY"]
 cipher_suite = Fernet(ENCRYPTION_KEY)
@@ -52,6 +53,14 @@ def register_provider(unit_of_work: UnitOfWork, data: ProviderRegisterRequest):
             type="provider",
             user_id=data.user_id,
             comment=data.comments,
+        )
+
+        uow.session.commit()
+
+        log_activity(
+            unit_of_work=uow,
+            application_id=data.application_guid,
+            description=f"Provider application '{data.application_name}' registered with details: {data.dict()}",
         )
 
     return {"message": "Application successfully registered."}
@@ -191,6 +200,12 @@ def update_provider(
 
         uow.application.update(provider_id, **update_data)
 
+        log_activity(
+            unit_of_work=uow,
+            application_id=provider_id,
+            description=f"Provider application '{provider.name}' updated with details: {update_data}",
+        )
+
         return {"message": "Application successfully updated."}
 
 
@@ -212,5 +227,11 @@ def delete_provider(unit_of_work: UnitOfWork, provider_id: UUID) -> Response:
             )
 
         uow.application.delete(provider_id)
+
+        log_activity(
+            unit_of_work=uow,
+            application_id=provider_id,
+            description=f"Provider application '{provider.name}' deleted.",
+        )
 
         return {"message": "Application successfully deleted."}
