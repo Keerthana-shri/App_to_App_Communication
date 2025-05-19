@@ -1,5 +1,6 @@
-from uuid import UUID
 from datetime import datetime
+from uuid import UUID
+
 from src.app.models.data_models import Log
 from src.app.services.unit_of_work import UnitOfWork
 
@@ -17,6 +18,6 @@ def log_activity(unit_of_work: UnitOfWork, application_id: UUID, description: st
         log_entry = Log(
             application_id=application_id,
             description=description,
-            created_at=datetime.now()
+            created_at=datetime.now(),
         )
         uow.session.add(log_entry)
