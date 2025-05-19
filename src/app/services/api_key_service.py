@@ -147,7 +147,7 @@ class APIKeyService:
 
             self.uow.api_key.add(api_key_entry)
 
-            self.uow.session.commit()
+            self.uow.commit()
 
             log_activity(
                 unit_of_work=self.uow,
