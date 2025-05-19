@@ -19,11 +19,12 @@ router = APIRouter(tags=["Provider"])
 
 @router.post("/providers", response_model=Response, status_code=201)
 def register_provider(data: ProviderRegisterRequest):
-    """**Registers a provider application.**
+    """
+    **Registers a provider application.**
 
     This endpoint handles the registration of a provider application. It validates the provided application details, ensures no duplicate registration, and securely stores relevant information.
 
-    **Args**:
+    **Parameters**:
 
         data (ProviderRegisterRequest):
             The request payload containing application details.
@@ -53,6 +54,30 @@ def get_all_providers(
     sort_by: SortByEnum = Query(SortByEnum.created_at),
     order: OrderEnum = Query(OrderEnum.asc),
 ):
+    """
+    **Retrieve a paginated list of providers.**
+
+    This endpoint fetches a list of providers with optional pagination, sorting, and ordering.
+
+    **Parameters**:
+
+        page (int):
+            Page number for pagination (default: 1, must be >= 1).
+
+        page_size (int):
+            Number of providers per page (default: 10, must be between 5 and 100).
+
+        sort_by (SortByEnum):
+            Field used for sorting providers (default: created_at).
+
+        order (OrderEnum):
+            Sorting order, either ascending or descending (default: ascending).
+
+    **Returns**:
+
+        PaginatedResponse:
+            A structured response containing provider data.
+    """
     unit_of_work = UnitOfWork()
 
     return provider_services.get_all_providers(
@@ -71,7 +96,7 @@ def get_provider(provider_id: UUID):
 
     This endpoint retrieves the details of a specific provider application using its unique identifier.
 
-    **Args**:
+    **Parameters**:
 
         provider_id (UUID):
             The unique identifier of the provider application.
@@ -102,7 +127,7 @@ def patch_provider(provider_id: UUID, data: ProviderUpdateRequest):
 
     This endpoint allows for partial updates to the details of a specific provider application.
 
-    **Args**:
+    **Parameters**:
 
         provider_id (UUID):
             The unique identifier of the provider application.
