@@ -58,8 +58,7 @@ def register_consumer(unit_of_work: UnitOfWork, data: ConsumerRegisterRequest):
             comment=data.comments,
         )
 
-        uow.session.commit()
-
+    with unit_of_work as uow:
         log_activity(
             unit_of_work=uow,
             application_id=data.application_guid,
@@ -281,6 +280,8 @@ def update_consumer(
 
         uow.application.update(consumer_id, **update_data)
 
+    with unit_of_work as uow:
+        consumer = uow.application.get(id=consumer_id)
         log_activity(
             unit_of_work=uow,
             application_id=consumer_id,
@@ -292,10 +293,11 @@ def update_consumer(
 
 def delete_consumer(unit_of_work: UnitOfWork, consumer_id: UUID) -> Response:
     """Deletes a consumer application."""
-
+    consumer_name = ""
     with unit_of_work as uow:
         # Fetch the consumer application by ID
         consumer = uow.application.get(id=consumer_id)
+        consumer_name = str(consumer.name)
         if not consumer:
             raise HTTPException(
                 status_code=404, detail="Consumer application not found."
@@ -309,10 +311,10 @@ def delete_consumer(unit_of_work: UnitOfWork, consumer_id: UUID) -> Response:
 
         uow.application.delete(consumer_id)
 
+    with unit_of_work as uow:
         log_activity(
             unit_of_work=uow,
-            application_id=consumer_id,
-            description=f"Consumer application '{consumer.name}' deleted.",
+            description=f"Consumer application '{consumer_name}' deleted.",
         )
 
         return {"message": "Application successfully deleted."}

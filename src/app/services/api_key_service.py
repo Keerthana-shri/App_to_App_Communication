@@ -147,12 +147,11 @@ class APIKeyService:
 
             self.uow.api_key.add(api_key_entry)
 
-            self.uow.commit()
-
+        with self.uow:
             log_activity(
                 unit_of_work=self.uow,
                 application_id=consumer_application_id,
-                description=f"API key created for consumer '{consumer_application_id}' and provider '{provider_application_id}' with permissions: {permissions}.",
+                description=f"API key created for consumer '{consumer_application_id}' and provider '{provider_application_id}' with permissions: {permissions.value}.",
             )
 
             return {
@@ -239,6 +238,8 @@ class APIKeyService:
             print(f"DEBUG: Proceeding to update API key {api_key_id} with {kwargs}")
             self.uow.api_key.update(api_key_id, **kwargs)
 
+        with self.uow:
+            api_key = self.uow.api_key.get(api_key_id)
             log_activity(
                 unit_of_work=self.uow,
                 application_id=api_key.consumer_id,

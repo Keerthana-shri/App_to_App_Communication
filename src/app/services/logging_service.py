@@ -1,11 +1,14 @@
 from datetime import datetime
+from typing import Optional
 from uuid import UUID
 
 from src.app.models.data_models import Log
 from src.app.services.unit_of_work import UnitOfWork
 
 
-def log_activity(unit_of_work: UnitOfWork, application_id: UUID, description: str):
+def log_activity(
+    unit_of_work: UnitOfWork, description: str, application_id: Optional[UUID] = None
+):
     """
     Logs an activity for a specific application.
 

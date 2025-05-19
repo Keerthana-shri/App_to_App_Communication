@@ -55,8 +55,7 @@ def register_provider(unit_of_work: UnitOfWork, data: ProviderRegisterRequest):
             comment=data.comments,
         )
 
-        uow.session.commit()
-
+    with unit_of_work as uow:
         log_activity(
             unit_of_work=uow,
             application_id=data.application_guid,
@@ -200,6 +199,9 @@ def update_provider(
 
         uow.application.update(provider_id, **update_data)
 
+    with unit_of_work as uow:
+        # Fetch the provider application by ID
+        provider = uow.application.get(id=provider_id)
         log_activity(
             unit_of_work=uow,
             application_id=provider_id,
@@ -211,10 +213,11 @@ def update_provider(
 
 def delete_provider(unit_of_work: UnitOfWork, provider_id: UUID) -> Response:
     """Deletes a provider application."""
-
+    provider_name = ""
     with unit_of_work as uow:
         # Fetch the provider application by ID
         provider = uow.application.get(id=provider_id)
+        provider_name = provider.name
         if not provider:
             raise HTTPException(
                 status_code=404, detail="Provider application not found."
@@ -228,10 +231,10 @@ def delete_provider(unit_of_work: UnitOfWork, provider_id: UUID) -> Response:
 
         uow.application.delete(provider_id)
 
+    with unit_of_work as uow:
         log_activity(
             unit_of_work=uow,
-            application_id=provider_id,
-            description=f"Provider application '{provider.name}' deleted.",
+            description=f"Provider application '{provider_name}' deleted.",
         )
 
         return {"message": "Application successfully deleted."}

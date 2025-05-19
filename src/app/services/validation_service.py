@@ -8,6 +8,7 @@ from src.app.schemas.validation_schemas import (
     ConsumerValidationRequest,
     ProviderValidationRequest,
 )
+from src.app.services.logging_service import log_activity
 from src.app.services.unit_of_work import UnitOfWork
 
 # Initialize the cipher suite using the encryption key
@@ -153,6 +154,13 @@ def validate_api_key(unit_of_work: UnitOfWork, request: ApiKeyValidationRequest)
                 status_code=403,
                 detail="API key is not associated with the specified application.",
             )
+    with unit_of_work as uow:
+        api_key = uow.api_key.get(api_key=request.api_key)
+        log_activity(
+            unit_of_work=uow,
+            application_id=api_key.consumer_id,
+            description=f"API key '{request.api_key}' validated for consumer '{api_key.consumer_id}' and provider '{api_key.provider_id}'.",
+        )
 
         return {
             "is_valid": True,

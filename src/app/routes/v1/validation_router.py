@@ -2,15 +2,10 @@ from fastapi import APIRouter, Depends
 
 from src.app.schemas.validation_schemas import (
     ApiKeyValidationRequest,
-    ConsumerValidationRequest,
     ProviderValidationRequest,
 )
 from src.app.services.unit_of_work import UnitOfWork
-from src.app.services.validation_service import (
-    validate_api_key,
-    validate_consumer_app,
-    validate_provider_app,
-)
+from src.app.services.validation_service import validate_api_key, validate_provider_app
 
 router = APIRouter(tags=["Validation"])
 
@@ -27,33 +22,6 @@ def get_unit_of_work():
         UnitOfWork: An instance of the UnitOfWork class.
     """
     return UnitOfWork()
-
-
-@router.post("/consumer-app")
-def validate_consumer(
-    request: ConsumerValidationRequest,
-    unit_of_work: UnitOfWork = Depends(get_unit_of_work),
-):
-    """
-    Endpoint to validate a consumer application.
-
-    This endpoint validates the consumer application by checking its existence,
-    verifying the secret hash, and ensuring it is of type "consumer".
-
-    Args:
-
-        request (ConsumerValidationRequest): The request object containing consumer_id and secret_hash.
-        unit_of_work (UnitOfWork): Dependency injection for database operations.
-
-    Returns:
-
-        dict: A success message if validation passes.
-
-    Raises:
-
-        HTTPException: If validation fails due to missing or invalid data.
-    """
-    return validate_consumer_app(unit_of_work, request)
 
 
 @router.post("/provider-app")

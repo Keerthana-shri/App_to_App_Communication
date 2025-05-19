@@ -191,7 +191,7 @@ class Log(Base):
     application_id = Column(
         UUID(as_uuid=True),
         ForeignKey("applications.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
     )
     description = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), default=func.now())
