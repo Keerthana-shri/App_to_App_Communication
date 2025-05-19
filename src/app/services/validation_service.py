@@ -1,16 +1,14 @@
-from uuid import UUID
-
 from cryptography.fernet import Fernet
 from fastapi import HTTPException
 
 from src.app.config.settings import app_config
 from src.app.models.data_models import StatusEnum
-from src.app.services.unit_of_work import UnitOfWork
 from src.app.schemas.validation_schemas import (
+    ApiKeyValidationRequest,
     ConsumerValidationRequest,
     ProviderValidationRequest,
-    ApiKeyValidationRequest,
 )
+from src.app.services.unit_of_work import UnitOfWork
 
 # Initialize the cipher suite using the encryption key
 ENCRYPTION_KEY = app_config["ENCRYPTION_KEY"]
@@ -36,8 +34,8 @@ def validate_consumer_app(unit_of_work: UnitOfWork, request: ConsumerValidationR
         dict: A success message if validation passes.
 
     Raises:
-    
-        HTTPException: If the consumer application is not found, the secret hash is invalid, 
+
+        HTTPException: If the consumer application is not found, the secret hash is invalid,
                        or the application type is not "consumer".
     """
     with unit_of_work as uow:
@@ -85,7 +83,7 @@ def validate_provider_app(unit_of_work: UnitOfWork, request: ProviderValidationR
         dict: A success message if validation passes.
 
     Raises:
-        HTTPException: If the provider application is not found, the secret hash is invalid, 
+        HTTPException: If the provider application is not found, the secret hash is invalid,
                        or the application type is not "provider".
     """
     with unit_of_work as uow:
@@ -145,10 +143,8 @@ def validate_api_key(unit_of_work: UnitOfWork, request: ApiKeyValidationRequest)
             raise HTTPException(status_code=404, detail="API key not found.")
 
         if not provider_app:
-            raise HTTPException(
-                status_code=404, detail="Invalid provider application."
-            )
-        
+            raise HTTPException(status_code=404, detail="Invalid provider application.")
+
         if key.status != StatusEnum.active:
             raise HTTPException(status_code=403, detail="API key is not active.")
 

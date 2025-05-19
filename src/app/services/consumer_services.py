@@ -3,7 +3,6 @@ from uuid import UUID
 
 from cryptography.fernet import Fernet
 from fastapi import HTTPException
-from passlib.hash import bcrypt
 
 from src.app.config.settings import app_config
 from src.app.schemas.consumer_schemas import (
@@ -15,8 +14,8 @@ from src.app.schemas.consumer_schemas import (
     PaginatedResponse,
     Response,
 )
-from src.app.services.unit_of_work import UnitOfWork
 from src.app.services.logging_service import log_activity
+from src.app.services.unit_of_work import UnitOfWork
 
 ENCRYPTION_KEY = app_config["ENCRYPTION_KEY"]
 cipher_suite = Fernet(ENCRYPTION_KEY)

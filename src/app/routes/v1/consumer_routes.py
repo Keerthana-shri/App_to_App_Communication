@@ -55,6 +55,20 @@ def get_all_consumers(
     sort_by: SortByEnum = Query(SortByEnum.created_at),
     order: OrderEnum = Query(OrderEnum.asc),
 ):
+    """
+    Retrieve a paginated list of consumers.
+
+    This endpoint returns a list of consumers with optional pagination, sorting, and ordering.
+
+    Parameters:
+    - page (int): Page number for pagination (default: 1, must be >= 1).
+    - page_size (int): Number of consumers per page (default: 10, must be between 5 and 100).
+    - sort_by (SortByEnum): Field used for sorting consumers (default: created_at).
+    - order (OrderEnum): Sorting order, either ascending or descending (default: ascending).
+
+    Returns:
+    - PaginatedResponse: A structured response containing consumer data.
+    """
     unit_of_work = UnitOfWork()
 
     return consumer_services.get_all_consumers(

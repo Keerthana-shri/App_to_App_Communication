@@ -10,7 +10,6 @@ from src.app.repositories.base_repository import BaseRepository
 class ApplicationRepository(BaseRepository[Application]):
     """
     Repository class for handling application-related database operations.
-    Repository class for handling application-related database operations.
     """
 
     def get_all(

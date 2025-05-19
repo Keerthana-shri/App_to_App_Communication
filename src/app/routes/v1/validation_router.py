@@ -1,19 +1,19 @@
-from uuid import UUID
-
 from fastapi import APIRouter, Depends
-from src.app.services.validation_service import (
-    validate_consumer_app,
-    validate_provider_app,
-    validate_api_key,
-)
+
 from src.app.schemas.validation_schemas import (
+    ApiKeyValidationRequest,
     ConsumerValidationRequest,
     ProviderValidationRequest,
-    ApiKeyValidationRequest,
 )
 from src.app.services.unit_of_work import UnitOfWork
+from src.app.services.validation_service import (
+    validate_api_key,
+    validate_consumer_app,
+    validate_provider_app,
+)
 
 router = APIRouter(tags=["Validation"])
+
 
 def get_unit_of_work():
     """
@@ -23,7 +23,7 @@ def get_unit_of_work():
     of the `UnitOfWork` class, which manages database operations.
 
     Returns:
-    
+
         UnitOfWork: An instance of the UnitOfWork class.
     """
     return UnitOfWork()
@@ -31,7 +31,8 @@ def get_unit_of_work():
 
 @router.post("/consumer-app")
 def validate_consumer(
-    request: ConsumerValidationRequest, unit_of_work: UnitOfWork = Depends(get_unit_of_work)
+    request: ConsumerValidationRequest,
+    unit_of_work: UnitOfWork = Depends(get_unit_of_work),
 ):
     """
     Endpoint to validate a consumer application.
@@ -57,7 +58,8 @@ def validate_consumer(
 
 @router.post("/provider-app")
 def validate_provider(
-    request: ProviderValidationRequest, unit_of_work: UnitOfWork = Depends(get_unit_of_work)
+    request: ProviderValidationRequest,
+    unit_of_work: UnitOfWork = Depends(get_unit_of_work),
 ):
     """
     Endpoint to validate a provider application.
@@ -83,7 +85,8 @@ def validate_provider(
 
 @router.post("/api-key")
 def validate_api_key_route(
-    request: ApiKeyValidationRequest, unit_of_work: UnitOfWork = Depends(get_unit_of_work)
+    request: ApiKeyValidationRequest,
+    unit_of_work: UnitOfWork = Depends(get_unit_of_work),
 ):
     """
     Endpoint to validate an API key.
