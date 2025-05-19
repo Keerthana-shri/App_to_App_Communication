@@ -21,21 +21,21 @@ router = APIRouter(tags=["Consumer"])
 
 @router.post("/consumers", response_model=Response, status_code=201)
 def register_consumer(data: ConsumerRegisterRequest):
-    """Registers a consumer application.
+    """**Registers a consumer application.**
 
     This endpoint handles the registration of a consumer application. It validates the provided application details, ensures no duplicate registration, and securely stores relevant information.
 
-    Args:
+    **Args**:
 
         data (ConsumerRegisterRequest):
             The request payload containing application details.
 
-    Returns:
+    **Returns**:
 
         ConsumerRegisterResponse:
             The response confirming successful registration.
 
-    Raises:
+    **Raises**:
 
         HTTPException:
             If validation fails or the application is already registered.
@@ -56,17 +56,17 @@ def get_all_consumers(
     order: OrderEnum = Query(OrderEnum.asc),
 ):
     """
-    Retrieve a paginated list of consumers.
+    **Retrieve a paginated list of consumers.**
 
     This endpoint returns a list of consumers with optional pagination, sorting, and ordering.
 
-    Parameters:
+    **Parameters**:
     - page (int): Page number for pagination (default: 1, must be >= 1).
     - page_size (int): Number of consumers per page (default: 10, must be between 5 and 100).
     - sort_by (SortByEnum): Field used for sorting consumers (default: created_at).
     - order (OrderEnum): Sorting order, either ascending or descending (default: ascending).
 
-    Returns:
+    **Returns**:
     - PaginatedResponse: A structured response containing consumer data.
     """
     unit_of_work = UnitOfWork()
@@ -83,21 +83,21 @@ def get_all_consumers(
 @router.get("/consumers/{consumer_id}", response_model=ConsumerDetailsResponse)
 def get_consumer(consumer_id: UUID):
     """
-    Fetches details of a registered consumer application.
+    **Fetches details of a registered consumer application.**
 
     This endpoint retrieves the details of a specific consumer application using its unique identifier.
 
-    Args:
+    **Args**:
 
         consumer_id (UUID):
             The unique identifier of the consumer application.
 
-    Returns:
+    **Returns**:
 
         ConsumerResponse:
             The details of the requested consumer application.
 
-    Raises:
+    **Raises**:
 
         HTTPException:
             If the consumer application is not found.
@@ -117,11 +117,11 @@ def get_api_key(
     data: ApiKeyRequest,
 ):
     """
-    Fetches the API key for a registered consumer application.
+    **Fetches the API key for a registered consumer application.**
 
     This endpoint retrieves the API key associated with a specific consumer application using its unique identifier.
 
-    Args:
+    **Args**:
 
         consumer_id (UUID):
             The unique identifier of the consumer application.
@@ -129,12 +129,12 @@ def get_api_key(
         data (ApiKeyRequest):
             The request payload containing the application secret and provider ID.
 
-    Returns:
+    **Returns**:
 
         ApiKeyResponse:
             The API key of the requested consumer application.
 
-    Raises:
+    **Raises**:
 
         HTTPException:
             If the consumer application is not found.
@@ -152,11 +152,11 @@ def get_api_key(
 @router.patch("/consumers/{consumer_id}", response_model=Response)
 def patch_consumer(consumer_id: UUID, data: ConsumerUpdateRequest):
     """
-    Updates the details of a registered consumer application.
+    **Updates the details of a registered consumer application.**
 
     This endpoint allows for partial updates to the details of a specific consumer application.
 
-    Args:
+    **Args**:
 
         consumer_id (UUID):
             The unique identifier of the consumer application.
@@ -164,12 +164,12 @@ def patch_consumer(consumer_id: UUID, data: ConsumerUpdateRequest):
         data (ConsumerUpdateRequest):
             The request payload containing updated application details.
 
-    Returns:
+    **Returns**:
 
         ConsumerResponse:
             The updated details of the consumer application.
 
-    Raises:
+    **Raises**:
 
         HTTPException:
             If the consumer application is not found or if validation fails.
@@ -188,17 +188,17 @@ def delete_consumer(
     consumer_id: UUID,
 ):
     """
-    Deletes a consumer from the database.
+    **Deletes a consumer from the database.**
 
-    Parameters:
+    **Parameters**:
         consumer_id (UUID):
             The unique identifier of the consumer to be deleted.
 
-    Returns:
+    **Returns**:
         Response:
             HTTP 204 No Content if deletion is successful.
 
-    Raises:
+    **Raises**:
         HTTPException 404: If the consumer with the given ID is not found.
     """
     unit_of_work = UnitOfWork()

@@ -19,21 +19,21 @@ router = APIRouter(tags=["Provider"])
 
 @router.post("/providers", response_model=Response, status_code=201)
 def register_provider(data: ProviderRegisterRequest):
-    """Registers a provider application.
+    """**Registers a provider application.**
 
     This endpoint handles the registration of a provider application. It validates the provided application details, ensures no duplicate registration, and securely stores relevant information.
 
-    Args:
+    **Args**:
 
         data (ProviderRegisterRequest):
             The request payload containing application details.
 
-    Returns:
+    **Returns**:
 
         ProviderRegisterResponse:
             The response confirming successful registration.
 
-    Raises:
+    **Raises**:
 
         HTTPException:
             If validation fails or the application is already registered.
@@ -67,21 +67,21 @@ def get_all_providers(
 @router.get("/providers/{provider_id}", response_model=ProviderDetailsResponse)
 def get_provider(provider_id: UUID):
     """
-    Fetches details of a registered provider application.
+    **Fetches details of a registered provider application.**
 
     This endpoint retrieves the details of a specific provider application using its unique identifier.
 
-    Args:
+    **Args**:
 
         provider_id (UUID):
             The unique identifier of the provider application.
 
-    Returns:
+    **Returns**:
 
         ProviderResponse:
             The details of the requested provider application.
 
-    Raises:
+    **Raises**:
 
         HTTPException:
             If the provider application is not found.
@@ -98,11 +98,11 @@ def get_provider(provider_id: UUID):
 @router.patch("/providers/{provider_id}", response_model=Response)
 def patch_provider(provider_id: UUID, data: ProviderUpdateRequest):
     """
-    Updates the details of a registered provider application.
+    **Updates the details of a registered provider application.**
 
     This endpoint allows for partial updates to the details of a specific provider application.
 
-    Args:
+    **Args**:
 
         provider_id (UUID):
             The unique identifier of the provider application.
@@ -110,12 +110,12 @@ def patch_provider(provider_id: UUID, data: ProviderUpdateRequest):
         data (ProviderUpdateRequest):
             The request payload containing updated application details.
 
-    Returns:
+    **Returns**:
 
         ProviderResponse:
             The updated details of the provider application.
 
-    Raises:
+    **Raises**:
 
         HTTPException:
             If the provider application is not found or if validation fails.
@@ -134,17 +134,17 @@ def delete_provider(
     provider_id: UUID,
 ):
     """
-    Deletes a provider from the database.
+    **Deletes a provider from the database.**
 
-    Parameters:
+    **Parameters**:
         provider_id (UUID):
             The unique identifier of the provider to be deleted.
 
-    Returns:
+    **Returns**:
         Response:
             HTTP 204 No Content if deletion is successful.
 
-    Raises:
+    **Raises**:
         HTTPException 404: If the provider with the given ID is not found.
     """
     unit_of_work = UnitOfWork()
