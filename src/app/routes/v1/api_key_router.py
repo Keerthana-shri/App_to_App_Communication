@@ -159,7 +159,7 @@ def update_api_key(
     return service.update_api_key(api_key_id, **request_data)
 
 
-@router.delete("/consumers/{consumer_id}/api-keys/{api_key_id}")
+@router.delete("/consumers/{consumer_id}/api-keys/{api_key_id}", status_code=204)
 def delete_api_key(consumer_id: UUID, api_key_id: UUID):
     """**Deletes an API key for a consumer application.**
 

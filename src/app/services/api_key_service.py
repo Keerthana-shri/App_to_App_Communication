@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 from cryptography.fernet import Fernet
+from fastapi import HTTPException
 
 from src.app.config.settings import app_config
 from src.app.models.data_models import ApiKey, PermissionEnum, StatusEnum
@@ -261,5 +262,7 @@ class APIKeyService:
             dict: A message indicating the deletion status.
         """
         with self.uow:
+            api_key = self.uow.api_key.get(api_key_id)
+            if not api_key:
+                HTTPException(status_code=404, detail="API key not found")
             self.uow.api_key.delete(api_key_id)
-            return {"message": "API key deleted successfully"}

@@ -154,7 +154,7 @@ def validate_api_key(unit_of_work: UnitOfWork, request: ApiKeyValidationRequest)
                 status_code=403,
                 detail="API key is not associated with the specified application.",
             )
-    with unit_of_work as uow:
+
         api_key = uow.api_key.get(api_key=request.api_key)
         log_activity(
             unit_of_work=uow,
