@@ -14,6 +14,7 @@ pre-commit = "*"
 passlib = {extras = ["bcrypt"], version = "*"}
 bcrypt = "==4.0.1"
 cryptography = "*"
+apscheduler = "*"
 
 [dev-packages]
 
