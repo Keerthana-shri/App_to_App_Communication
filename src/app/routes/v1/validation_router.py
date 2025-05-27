@@ -7,7 +7,7 @@ from src.app.schemas.validation_schemas import (
 from src.app.services.unit_of_work import UnitOfWork
 from src.app.services.validation_service import validate_api_key, validate_provider_app
 
-router = APIRouter(tags=["Validation"])
+router = APIRouter(tags=["Validation"], prefix="/validations")
 
 
 def get_unit_of_work():
@@ -24,7 +24,7 @@ def get_unit_of_work():
     return UnitOfWork()
 
 
-@router.post("/provider-app")
+@router.post("/provider")
 def validate_provider(
     request: ProviderValidationRequest,
     unit_of_work: UnitOfWork = Depends(get_unit_of_work),
