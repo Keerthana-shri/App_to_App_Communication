@@ -148,6 +148,12 @@ class APIKeyService:
 
             self.uow.api_key.add(api_key_entry)
 
+            response = {
+                "message": "API key generated successfully",
+                "api_key": encrypted_api_key.decode(),
+                "status": api_key_entry.status,
+            }
+
         with self.uow:
             log_activity(
                 unit_of_work=self.uow,
@@ -155,11 +161,7 @@ class APIKeyService:
                 description=f"API key created for consumer '{consumer_application_id}' and provider '{provider_application_id}' with permissions: {permissions.value}.",
             )
 
-            return {
-                "message": "API key generated successfully",
-                "api_key": encrypted_api_key.decode(),
-                "status": api_key_entry.status,
-            }
+        return response
 
     def get_all_api_keys(self, consumer_id: UUID, page: int = 1, page_size: int = 10):
         """
