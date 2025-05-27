@@ -291,6 +291,7 @@ class APIKeyService:
                         key.id, updated_at=updated_at, api_key=re_encrypted_api_key
                     )
                     logs.append(f"API key '{key.id}' rotated at {updated_at}.")
+            print(f"DEBUG: Rotated API key for id {key.id} at {now}.")
 
         for log in logs:
             log_activity(unit_of_work=self.uow, description=log)

@@ -104,6 +104,7 @@ class APIKeyRepository:
                 "expires_at",
                 "comment",
                 "api_key",
+                "updated_at",
             }
             for key, value in kwargs.items():
                 if key in allowed_fields:

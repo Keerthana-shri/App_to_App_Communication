@@ -9,7 +9,8 @@ from src.app.services.unit_of_work import UnitOfWork
 
 scheduler = BackgroundScheduler()
 service = APIKeyService(uow=UnitOfWork())
-scheduler.add_job(service.rotate_api_keys, "interval", days=7)
+scheduler.add_job(service.rotate_api_keys, "interval", seconds=3)
+
 
 
 @asynccontextmanager
