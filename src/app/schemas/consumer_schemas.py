@@ -165,11 +165,11 @@ class PaginatedResponse(BaseModel):
         items (list[ConsumerDetailsResponse]): The list of items retrieved for the current page.
     """
 
-    total_pages: int
-    previous_page: Optional[int]
-    current_page: int
-    next_page: Optional[int]
-    page_size: int
+    total_pages: int = Field(example=1)
+    previous_page: Optional[int] = Field(example="null")
+    current_page: int = Field(example=1)
+    next_page: Optional[int] = Field(example="null")
+    page_size: int = Field(example=10)
     items: list[ConsumerDetailsResponse]
 
 
@@ -181,7 +181,9 @@ class ApiKeyResponse(BaseModel):
         x_api_key (str): The generated API key of provider for the consumer.
     """
 
-    x_api_key: str
+    x_api_key: str = Field(
+        example="gAAAAABoJJIhIatLEuL9WRKLnWWRhDTXzzf9CI2J6-cY07qWQ9bYfUAB37C-G5NlcrJLH1ewIDKqKFqEptkUQ9brKl_X66-XKofrttbpK5hUt_mMHhKcygYz5d3dbYr1Y6F9toGKasSp"
+    )
 
 
 class ApiKeyRequest(BaseModel):
@@ -193,9 +195,5 @@ class ApiKeyRequest(BaseModel):
         provider_id (UUID4): The unique identifier of the provider application.
     """
 
-    application_secret: UUID4 = Field(
-        default_factory=uuid.uuid4, example=str(uuid.uuid4())
-    )
-    provider_id: UUID4 = Field(
-        default_factory=uuid.uuid4, example="40d46134-a885-4e17-91ce-0be66ce832ff"
-    )
+    application_secret: UUID4 = Field(example="8fdf8419-99e1-423e-947d-3513c1a02d92")
+    provider_id: UUID4 = Field(example="40d46134-a885-4e17-91ce-0be66ce832ff")

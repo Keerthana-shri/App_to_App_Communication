@@ -1,6 +1,7 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from src.app.schemas.api_key_schema import (
     APIKeyCreate,
@@ -8,6 +9,7 @@ from src.app.schemas.api_key_schema import (
     APIKeyListResponse,
     APIKeyResponse,
     APIKeyUpdate,
+    Response,
 )
 from src.app.services.api_key_service import APIKeyService
 from src.app.services.unit_of_work import UnitOfWork
@@ -16,7 +18,11 @@ router = APIRouter(tags=["Consumer"])
 
 
 @router.post("/consumers/{consumer_id}/api-keys", response_model=APIKeyResponse)
-def generate_api_key(consumer_id: UUID, request: APIKeyCreate):
+def generate_api_key(
+    consumer_id: UUID,
+    request: APIKeyCreate,
+    token: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
+):
     """**Generates an API key for a consumer application.**
 
     This endpoint handles the creation of a new API key for a consumer application. It validates the provided details and securely generates the API key.
@@ -57,6 +63,7 @@ def get_all_api_keys(
     consumer_id: UUID,
     page: int = Query(1),
     page_size: int = Query(10),
+    token: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
 ):
     """**Retrieves all API keys for a consumer application.**
 
@@ -87,7 +94,11 @@ def get_all_api_keys(
     "/consumers/{consumer_id}/api-keys/{api_key_id}",
     response_model=APIKeyDetailResponse,
 )
-def get_api_key(consumer_id: UUID, api_key_id: UUID):
+def get_api_key(
+    consumer_id: UUID,
+    api_key_id: UUID,
+    token: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
+):
     """**Retrieves a specific API key for a consumer application.**
 
     This endpoint fetches details of a specific API key associated with a consumer application.
@@ -112,11 +123,12 @@ def get_api_key(consumer_id: UUID, api_key_id: UUID):
     return api_key
 
 
-@router.patch("/consumers/{consumer_id}/api-keys/{api_key_id}")
+@router.patch("/consumers/{consumer_id}/api-keys/{api_key_id}", response_model=Response)
 def update_api_key(
     consumer_id: UUID,
     api_key_id: UUID,
     request: APIKeyUpdate,
+    token: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
 ):
     """**Updates an existing API key for a consumer application.**
 
@@ -160,7 +172,11 @@ def update_api_key(
 
 
 @router.delete("/consumers/{consumer_id}/api-keys/{api_key_id}", status_code=204)
-def delete_api_key(consumer_id: UUID, api_key_id: UUID):
+def delete_api_key(
+    consumer_id: UUID,
+    api_key_id: UUID,
+    token: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
+):
     """**Deletes an API key for a consumer application.**
 
     This endpoint handles the deletion of a specific API key associated with a consumer application.

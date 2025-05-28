@@ -12,7 +12,6 @@ service = APIKeyService(uow=UnitOfWork())
 scheduler.add_job(service.rotate_api_keys, "interval", days=3)
 
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     scheduler.start()

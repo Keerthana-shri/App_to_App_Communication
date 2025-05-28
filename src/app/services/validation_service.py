@@ -67,7 +67,9 @@ def validate_consumer_app(unit_of_work: UnitOfWork, request: ConsumerValidationR
     return {"message": "Consumer application validated successfully."}
 
 
-def validate_provider_app(unit_of_work: UnitOfWork, request: ProviderValidationRequest):
+def validate_provider_app(
+    unit_of_work: UnitOfWork, request: ProviderValidationRequest
+) -> dict:
     """
     Validates the provider application.
 
@@ -116,7 +118,9 @@ def validate_provider_app(unit_of_work: UnitOfWork, request: ProviderValidationR
     return {"message": "Provider application validated successfully."}
 
 
-def validate_api_key(unit_of_work: UnitOfWork, request: ApiKeyValidationRequest):
+def validate_api_key_service(
+    unit_of_work: UnitOfWork, request: ApiKeyValidationRequest
+) -> dict:
     """
     Validates the API key.
 
@@ -136,7 +140,9 @@ def validate_api_key(unit_of_work: UnitOfWork, request: ApiKeyValidationRequest)
     Raises:
         HTTPException: If the API key is not found, is inactive, or is not associated with the specified provider application.
     """
+    validate_provider_app(request=request, unit_of_work=unit_of_work)
     with unit_of_work as uow:
+        print(request)
         key = uow.api_key.get(api_key=request.api_key)
         provider_app = uow.application.get(id=request.provider_id)
 

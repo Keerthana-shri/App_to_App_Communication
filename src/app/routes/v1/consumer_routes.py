@@ -1,6 +1,7 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 import src.app.services.consumer_services as consumer_services
 from src.app.schemas.consumer_schemas import (
@@ -20,7 +21,10 @@ router = APIRouter(tags=["Consumer"])
 
 
 @router.post("/consumers", response_model=Response, status_code=201)
-def register_consumer(data: ConsumerRegisterRequest):
+def register_consumer(
+    data: ConsumerRegisterRequest,
+    token: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
+):
     """**Registers a consumer application.**
 
     This endpoint handles the registration of a consumer application. It validates the provided application details, ensures no duplicate registration, and securely stores relevant information.
@@ -54,6 +58,7 @@ def get_all_consumers(
     page_size: int = Query(10, ge=5, le=100),
     sort_by: SortByEnum = Query(SortByEnum.created_at),
     order: OrderEnum = Query(OrderEnum.asc),
+    token: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
 ):
     """
     **Retrieve a paginated list of consumers.**
@@ -81,7 +86,9 @@ def get_all_consumers(
 
 
 @router.get("/consumers/{consumer_id}", response_model=ConsumerDetailsResponse)
-def get_consumer(consumer_id: UUID):
+def get_consumer(
+    consumer_id: UUID, token: HTTPAuthorizationCredentials = Depends(HTTPBearer())
+):
     """
     **Fetches details of a registered consumer application.**
 
@@ -115,6 +122,7 @@ def get_consumer(consumer_id: UUID):
 def get_api_key(
     consumer_id: UUID,
     data: ApiKeyRequest,
+    token: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
 ):
     """
     **Fetches the API key for a registered consumer application.**
@@ -150,7 +158,11 @@ def get_api_key(
 
 
 @router.patch("/consumers/{consumer_id}", response_model=Response)
-def patch_consumer(consumer_id: UUID, data: ConsumerUpdateRequest):
+def patch_consumer(
+    consumer_id: UUID,
+    data: ConsumerUpdateRequest,
+    token: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
+):
     """
     **Updates the details of a registered consumer application.**
 
@@ -185,7 +197,7 @@ def patch_consumer(consumer_id: UUID, data: ConsumerUpdateRequest):
 
 @router.delete("/consumers/{consumer_id}", status_code=204)
 def delete_consumer(
-    consumer_id: UUID,
+    consumer_id: UUID, token: HTTPAuthorizationCredentials = Depends(HTTPBearer())
 ):
     """
     **Deletes a consumer from the database.**

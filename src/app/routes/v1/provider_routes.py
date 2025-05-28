@@ -1,6 +1,7 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 import src.app.services.provider_services as provider_services
 from src.app.schemas.provider_schemas import (
@@ -18,7 +19,10 @@ router = APIRouter(tags=["Provider"])
 
 
 @router.post("/providers", response_model=Response, status_code=201)
-def register_provider(data: ProviderRegisterRequest):
+def register_provider(
+    data: ProviderRegisterRequest,
+    token: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
+):
     """
     **Registers a provider application.**
 
@@ -53,6 +57,7 @@ def get_all_providers(
     page_size: int = Query(10, ge=5, le=100),
     sort_by: SortByEnum = Query(SortByEnum.created_at),
     order: OrderEnum = Query(OrderEnum.asc),
+    token: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
 ):
     """
     **Retrieve a paginated list of providers.**
@@ -90,7 +95,9 @@ def get_all_providers(
 
 
 @router.get("/providers/{provider_id}", response_model=ProviderDetailsResponse)
-def get_provider(provider_id: UUID):
+def get_provider(
+    provider_id: UUID, token: HTTPAuthorizationCredentials = Depends(HTTPBearer())
+):
     """
     **Fetches details of a registered provider application.**
 
@@ -121,7 +128,11 @@ def get_provider(provider_id: UUID):
 
 
 @router.patch("/providers/{provider_id}", response_model=Response)
-def patch_provider(provider_id: UUID, data: ProviderUpdateRequest):
+def patch_provider(
+    provider_id: UUID,
+    data: ProviderUpdateRequest,
+    token: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
+):
     """
     **Updates the details of a registered provider application.**
 
@@ -156,7 +167,7 @@ def patch_provider(provider_id: UUID, data: ProviderUpdateRequest):
 
 @router.delete("/providers/{provider_id}", status_code=204)
 def delete_provider(
-    provider_id: UUID,
+    provider_id: UUID, token: HTTPAuthorizationCredentials = Depends(HTTPBearer())
 ):
     """
     **Deletes a provider from the database.**
