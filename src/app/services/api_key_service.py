@@ -269,8 +269,16 @@ class APIKeyService:
                 HTTPException(status_code=404, detail="API key not found")
             self.uow.api_key.delete(api_key_id)
 
+        with self.uow as uow:
+            log_activity(
+            unit_of_work=uow,
+            description=f"API Key with Id '{api_key_id}' deleted.",
+        )
+
+        return {"message": "API Key successfully deleted."}
+
     def rotate_api_keys(self):
-        print("DEBUG: Starting API key rotation process.")
+        #print("DEBUG: Starting API key rotation process.")
         now = datetime.now(timezone.utc)
         logs = []
         with self.uow:
@@ -281,7 +289,12 @@ class APIKeyService:
             )
             total = len(keys_to_rotate)
             for key in keys_to_rotate:
-                if key.expires_at >= now:
+                if key.expires_at < now:
+                    self.uow.api_key.update(
+                        key.id, status=StatusEnum.inactive, updated_at=now
+                    )
+                    logs.append(f"API key '{key.id}' set to inactive at {now}.")
+                else:
                     decrypted_api_key = self.cipher_suite.decrypt(key.api_key.encode())
                     re_encrypted_api_key = self.cipher_suite.encrypt(
                         decrypted_api_key
@@ -291,7 +304,7 @@ class APIKeyService:
                         key.id, updated_at=updated_at, api_key=re_encrypted_api_key
                     )
                     logs.append(f"API key '{key.id}' rotated at {updated_at}.")
-            print(f"DEBUG: Rotated API key for id {key.id} at {now}.")
+            #print(f"DEBUG: Rotated API key for id {key.id} at {now}.")
 
         for log in logs:
             log_activity(unit_of_work=self.uow, description=log)
