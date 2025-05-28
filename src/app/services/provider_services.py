@@ -217,18 +217,17 @@ def delete_provider(unit_of_work: UnitOfWork, provider_id: UUID) -> Response:
     with unit_of_work as uow:
         # Fetch the provider application by ID
         provider = uow.application.get(id=provider_id)
-        
+
         if not provider:
             raise HTTPException(
                 status_code=404, detail="Provider application not found."
             )
-        provider_name = provider.name
         # Check if the application is a provider
         if provider.type.value != "provider":
             raise HTTPException(
                 status_code=403, detail="Cannot delete a non-provider application."
             )
-
+        provider_name = provider.name
         uow.application.delete(provider_id)
 
     with unit_of_work as uow:

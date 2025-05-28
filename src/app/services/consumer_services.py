@@ -297,7 +297,6 @@ def delete_consumer(unit_of_work: UnitOfWork, consumer_id: UUID) -> Response:
     with unit_of_work as uow:
         # Fetch the consumer application by ID
         consumer = uow.application.get(id=consumer_id)
-        consumer_name = str(consumer.name)
         if not consumer:
             raise HTTPException(
                 status_code=404, detail="Consumer application not found."
@@ -308,7 +307,7 @@ def delete_consumer(unit_of_work: UnitOfWork, consumer_id: UUID) -> Response:
             raise HTTPException(
                 status_code=403, detail="Cannot delete a non-consumer application."
             )
-
+        consumer_name = str(consumer.name)
         uow.application.delete(consumer_id)
 
     with unit_of_work as uow:
