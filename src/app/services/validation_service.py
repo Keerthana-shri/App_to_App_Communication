@@ -99,7 +99,6 @@ def validate_provider_app(
 
         try:
             decrypted_secret = cipher_suite.decrypt(provider_app.secret_hash).decode()
-            print(f"Decrypted secret: {decrypted_secret}")
             if decrypted_secret != request.secret_hash:
                 raise HTTPException(
                     status_code=403,
@@ -142,7 +141,6 @@ def validate_api_key_service(
     """
     validate_provider_app(request=request, unit_of_work=unit_of_work)
     with unit_of_work as uow:
-        print(request)
         key = uow.api_key.get(api_key=request.api_key)
         provider_app = uow.application.get(id=request.provider_id)
 
