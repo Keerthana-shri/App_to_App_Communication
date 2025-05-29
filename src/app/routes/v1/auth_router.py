@@ -5,13 +5,14 @@ from src.app.schemas.auth_schemas import (
     UserLoginInput,
     UserLoginOutput,
     UserRegisterRequest,
+    UserRegisterResponse,
 )
 from src.app.services.auth_services import AuthService
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-@router.post("/register", status_code=201)
+@router.post("/register", status_code=201, response_model=UserRegisterResponse)
 def register(register_data: UserRegisterRequest, services=Depends(AuthService)):
     """
     **User Registration endpoint**

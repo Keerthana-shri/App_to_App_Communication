@@ -16,6 +16,7 @@ bcrypt = "==4.0.1"
 cryptography = "*"
 apscheduler = "*"
 python-jose = "*"
+pydantic = {extras = ["email"], version = "*"}
 
 [dev-packages]
 

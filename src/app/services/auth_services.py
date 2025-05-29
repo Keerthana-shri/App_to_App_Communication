@@ -9,6 +9,7 @@ from src.app.schemas.auth_schemas import (
     UserLoginInput,
     UserLoginOutput,
     UserRegisterRequest,
+    UserRegisterResponse
 )
 from src.app.services.unit_of_work import UnitOfWork
 
@@ -70,7 +71,7 @@ class AuthService:
         except JWTError as exc:
             raise HTTPException(status_code=401, detail="Invalid token.") from exc
 
-    def register(self, data: UserRegisterRequest):
+    def register(self, data: UserRegisterRequest) -> UserRegisterResponse: 
         """
         Registers a new user.
 
@@ -81,7 +82,7 @@ class AuthService:
                 raise HTTPException(status_code=409, detail="Email already exists.")
             hashed_password = self.get_password_hash(data.password)
             uow.user.add(name=data.name, email=data.email, password=hashed_password)
-            return uow.user.get(email=data.email)
+            return UserRegisterResponse(**uow.user.get(email=data.email).__dict__)
 
     def login(self, login_data: UserLoginInput) -> UserLoginOutput:
         """

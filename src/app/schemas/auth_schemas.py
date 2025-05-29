@@ -1,4 +1,5 @@
-from pydantic import UUID4, BaseModel, Field
+from pydantic import UUID4, BaseModel, Field, EmailStr
+from datetime import datetime
 
 
 class UserRegisterRequest(BaseModel):
@@ -12,12 +13,35 @@ class UserRegisterRequest(BaseModel):
     """
 
     name: str = Field(..., min_length=3, example="Arjun Kumar")
-    email: str = Field(..., min_length=3, example="arjun@example.com")
+    email: EmailStr = Field(..., example="arjun@example.com")  
     password: str = Field(..., min_length=8, max_length=15, example="Password123")
 
 
+class UserRegisterResponse(BaseModel):
+    """
+    Schema for user registration response.
+
+    Attributes:
+        message (str): Confirmation message indicating successful registration.
+    """
+    id: UUID4 = Field(
+        example="a057320f-bae9-43ed-974a-b2cd81f88f93"
+    )
+    email: EmailStr = Field(
+        example="arjun@email.com"
+    )
+    name: str = Field(..., min_length=3,
+        example="Arjun Kumar"
+    )
+    created_at: datetime = Field(
+        example="2023-10-01T12:00:00Z"
+    )
+    
+    
+
+
 class UserLoginInput(BaseModel):
-    email: str = Field(..., min_length=3, example="arjun@example.com")
+    email: EmailStr = Field(..., example="arjun@example.com") 
     password: str = Field(..., example="Password123")
 
 

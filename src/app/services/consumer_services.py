@@ -44,6 +44,12 @@ def register_consumer(unit_of_work: UnitOfWork, data: ConsumerRegisterRequest):
             raise HTTPException(
                 status_code=409, detail="The application is already registered."
             )
+        
+        user = uow.user.get(id=data.user_id)
+        if not user:
+            raise HTTPException(
+                status_code=404, detail="User not found for the provided user ID."
+            )
 
         # Hash the application secret using bcrypt
         secret_code = str(data.application_secret)

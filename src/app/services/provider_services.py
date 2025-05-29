@@ -42,6 +42,12 @@ def register_provider(unit_of_work: UnitOfWork, data: ProviderRegisterRequest):
             raise HTTPException(
                 status_code=409, detail="The application is already registered."
             )
+        
+        user = uow.user.get(id=data.user_id)
+        if not user:
+            raise HTTPException(
+                status_code=404, detail="User not found."
+            )
 
         secret_code = str(data.application_secret)
         encrypted_secret = cipher_suite.encrypt(secret_code.encode()).decode()
