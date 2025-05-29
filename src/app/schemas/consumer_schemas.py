@@ -22,7 +22,7 @@ class ConsumerRegisterRequest(BaseModel):
         default_factory=uuid.uuid4, example="b9fd40b8-07a3-45dc-a253-e34d7d5dd73b"
     )
     application_secret: UUID4 = Field(
-        default_factory=uuid.uuid4, example=str(uuid.uuid4())
+        default_factory=uuid.uuid4, example="8fdf8419-99e1-423e-947d-3513c1a02d92"
     )
     user_id: UUID4 = Field(
         default_factory=uuid.uuid4, example="96e5fed6-9507-486b-8903-7d449bceac46"

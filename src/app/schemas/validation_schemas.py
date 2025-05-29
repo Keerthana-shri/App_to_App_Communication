@@ -3,7 +3,7 @@ from pydantic import UUID4, BaseModel, Field
 
 class ConsumerValidationRequest(BaseModel):
     consumer_id: UUID4 = Field(..., example="b9fd40b8-07a3-45dc-a253-e34d7d5dd73b")
-    secret_hash: str = Field(..., example="0c89defe-cb97-48d7-8258-6f79d5e7f511")
+    secret_hash: str = Field(..., example="8fdf8419-99e1-423e-947d-3513c1a02d92")
 
 
 class ProviderValidationRequest(BaseModel):

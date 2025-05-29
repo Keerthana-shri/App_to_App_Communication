@@ -22,7 +22,7 @@ class ProviderRegisterRequest(BaseModel):
         default_factory=uuid.uuid4, example="40d46134-a885-4e17-91ce-0be66ce832ff"
     )
     application_secret: UUID4 = Field(
-        default_factory=uuid.uuid4, example=str(uuid.uuid4())
+        default_factory=uuid.uuid4, example="62f1a7e2-b1e7-4648-827c-0367aa3ed0f2"
     )
     user_id: UUID4 = Field(
         default_factory=uuid.uuid4, example="96e5fed6-9507-486b-8903-7d449bceac46"
