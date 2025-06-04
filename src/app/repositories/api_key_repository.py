@@ -4,7 +4,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from src.app.models.data_models import ApiKey
+from src.app.models.data_models import Consumer
 
 
 class APIKeyRepository:
@@ -26,7 +26,7 @@ class APIKeyRepository:
 
     def get_all(
         self, page: int = 1, page_size: int = 10, filters: dict = None
-    ) -> Tuple[List[ApiKey], int]:
+    ) -> Tuple[List[Consumer], int]:
         """
         Retrieves all API keys with pagination and optional filters.
 
@@ -36,14 +36,14 @@ class APIKeyRepository:
             filters (dict): Optional filters for querying API keys.
 
         Returns:
-            Tuple[List[ApiKey], int]: A tuple containing a list of API keys and the total count.
+            Tuple[List[Consumer], int]: A tuple containing a list of API keys and the total count.
         """
         skip = (page - 1) * page_size
-        query = self.session.query(ApiKey)
+        query = self.session.query(Consumer)
 
         if filters:
             for attr, value in filters.items():
-                query = query.filter(getattr(ApiKey, attr) == value)
+                query = query.filter(getattr(Consumer, attr) == value)
 
         total = query.count()
         api_keys = query.offset(skip).limit(page_size).all()
@@ -55,36 +55,30 @@ class APIKeyRepository:
         api_key: Optional[str] = None,
         provider_id: Optional[UUID] = None,
         consumer_id: Optional[UUID] = None,
-    ) -> Optional[ApiKey]:
+    ) -> Optional[Consumer]:
         """
         Retrieve an API key by its ID or API key string.
 
         Args:
             id (Optional[UUID]): The unique identifier of the API key.
-            api_key (Optional[str]): The API key string.
             provider_id (Optional[UUID]): The unique identifier of the provider.
-            consumer_id (Optional[UUID]): The unique identifier of the consumer.
 
         Returns:
-            Optional[ApiKey]: The ApiKey object if found, otherwise None.
+            Optional[Consumer]: The Consumer object if found, otherwise None.
         """
-        query = self.session.query(ApiKey)
+        query = self.session.query(Consumer)
         if id:
-            query = query.filter(ApiKey.id == id)
-        if api_key:
-            query = query.filter(ApiKey.api_key == api_key)
+            query = query.filter(Consumer.id == id)
         if provider_id:
-            query = query.filter(ApiKey.provider_id == provider_id)
-        if consumer_id:
-            query = query.filter(ApiKey.consumer_id == consumer_id)
+            query = query.filter(Consumer.provider_id == provider_id)
         return query.first()
 
-    def add(self, api_key: ApiKey) -> None:
+    def add(self, api_key: Consumer) -> None:
         """
         Adds a new API key to the database.
 
         Args:
-            api_key (ApiKey): The API key to add.
+            api_key (Consumer): The API key to add.
         """
         self.session.add(api_key)
 

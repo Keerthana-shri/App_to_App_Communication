@@ -5,7 +5,7 @@ from cryptography.fernet import Fernet
 from fastapi import HTTPException
 
 from src.app.config.settings import app_config
-from src.app.models.data_models import ApiKey, PermissionEnum, StatusEnum
+from src.app.models.data_models import Consumer, PermissionEnum, StatusEnum
 from src.app.schemas.api_key_schema import APIKeyDetailResponse, APIKeyListResponse
 from src.app.services.logging_service import log_activity
 from src.app.services.unit_of_work import UnitOfWork
@@ -133,7 +133,7 @@ class APIKeyService:
             api_key = str(uuid4())
             encrypted_api_key = self.cipher_suite.encrypt(api_key.encode())
 
-            api_key_entry = ApiKey(
+            api_key_entry = Consumer(
                 provider_id=provider_application_id,
                 consumer_id=consumer_application_id,
                 api_key_owner_id=api_key_owner_id,
