@@ -87,14 +87,14 @@ class Application(Base):
         updated_at (datetime): Timestamp when the application was last updated.
         owner (User): The user who owns the application.
         provided_keys (list): API keys provided by the application.
-        consumed_keys (list): API keys consumed by the application.
+
         logs (list): Logs associated with the application.
     """
 
     __tablename__ = "applications"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    name = Column(String(100), nullable=False)
+    name = Column(String(100), unique=True, nullable=False)
     secret_hash = Column(Text, nullable=False)
     type = Column(Enum(AppType), nullable=False)
     status = Column(Enum(StatusEnum), default=StatusEnum.active)
@@ -111,9 +111,6 @@ class Application(Base):
     provided_keys = relationship(
         "ApiKey", back_populates="provider_app", foreign_keys="ApiKey.provider_id"
     )
-    consumed_keys = relationship(
-        "ApiKey", back_populates="consumer_app", foreign_keys="ApiKey.consumer_id"
-    )
 
     logs = relationship(
         "Log",
@@ -123,16 +120,14 @@ class Application(Base):
     )
 
 
-class ApiKey(Base):
+class Consumer(Base):
     """
     Represents an API key in the system.
 
     Attributes:
         id (UUID): Primary key.
         provider_id (UUID): Foreign key referencing the provider application.
-        consumer_id (UUID): Foreign key referencing the consumer application.
         status (StatusEnum): Status of the API key.
-        api_key (str): The actual API key (unique).
         api_key_owner_id (UUID): Foreign key referencing the owner (User).
         permissions (PermissionEnum): Permissions associated with the API key.
         created_at (datetime): Timestamp when the API key was created.
@@ -140,21 +135,16 @@ class ApiKey(Base):
         expires_at (datetime): Expiration timestamp of the API key.
         comment (str): Additional comments about the API key.
         provider_app (Application): The provider application associated with the API key.
-        consumer_app (Application): The consumer application associated with the API key.
         owner (User): The user who owns the API key.
     """
 
-    __tablename__ = "api_keys"
+    __tablename__ = "consumer"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     provider_id = Column(
         UUID(as_uuid=True), ForeignKey("applications.id"), nullable=False
     )
-    consumer_id = Column(
-        UUID(as_uuid=True), ForeignKey("applications.id"), nullable=False
-    )
     status = Column(Enum(StatusEnum), default=StatusEnum.active)
-    api_key = Column(String, unique=True, nullable=False)
     api_key_owner_id = Column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
     )
@@ -167,9 +157,6 @@ class ApiKey(Base):
 
     provider_app = relationship(
         "Application", foreign_keys=[provider_id], back_populates="provided_keys"
-    )
-    consumer_app = relationship(
-        "Application", foreign_keys=[consumer_id], back_populates="consumed_keys"
     )
     owner = relationship("User", back_populates="api_keys")
 
