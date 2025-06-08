@@ -1,7 +1,7 @@
 import enum
 import uuid
 
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.sql import func
@@ -83,7 +83,18 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    applications = relationship("Application", back_populates="owner")
+    applications = relationship(
+        "Application",
+        back_populates="owner",
+        foreign_keys="Application.owner_id",
+        passive_deletes=True,
+    )
+    api_keys = relationship(
+        "Consumer",
+        back_populates="owner",
+        foreign_keys="Consumer.owner_id",
+        passive_deletes=True,
+    )
 
 
 class Application(Base):
@@ -126,14 +137,20 @@ class Application(Base):
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     updated_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
 
-    owner = relationship("User", back_populates="applications", passive_deletes=True)
+    owner = relationship(
+        "User",
+        back_populates="applications",
+        foreign_keys=[owner_id],
+        passive_deletes=True,
+    )
 
     provided_keys = relationship(
         "Consumer", back_populates="provider_app", foreign_keys="Consumer.provider_id"
     )
 
     consumed_keys = relationship(
-        "Consumer", back_populates="consumer_app", foreign_keys="Consumer.consumer_id")
+        "Consumer", back_populates="consumer_app", foreign_keys="Consumer.consumer_id"
+    )
 
     logs = relationship(
         "Log",
@@ -165,14 +182,18 @@ class Consumer(Base):
         owner (User): The user who owns the API key.
     """
 
-    __tablename__ = "consumer"
+    __tablename__ = "consumers"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     provider_id = Column(
-        UUID(as_uuid=True), ForeignKey("applications.id", ondelete="CASCADE"), nullable=False
+        UUID(as_uuid=True),
+        ForeignKey("applications.id", ondelete="CASCADE"),
+        nullable=False,
     )
     consumer_id = Column(
-        UUID(as_uuid=True), ForeignKey("applications.id", ondelete="CASCADE"), nullable=False
+        UUID(as_uuid=True),
+        ForeignKey("applications.id", ondelete="CASCADE"),
+        nullable=False,
     )
     owner_id = Column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
@@ -188,12 +209,20 @@ class Consumer(Base):
     comment = Column(Text)
 
     provider_app = relationship(
-        "Application", foreign_keys=[provider_id], back_populates="provided_keys", passive_deletes=True
+        "Application",
+        foreign_keys=[provider_id],
+        back_populates="provided_keys",
+        passive_deletes=True,
     )
     consumer_app = relationship(
-        "Application", foreign_keys=[consumer_id], back_populates="consumed_keys", passive_deletes=True
+        "Application",
+        foreign_keys=[consumer_id],
+        back_populates="consumed_keys",
+        passive_deletes=True,
     )
-    owner = relationship("User", back_populates="api_keys", foreign_keys=[owner_id], passive_deletes=True)
+    owner = relationship(
+        "User", back_populates="api_keys", foreign_keys=[owner_id], passive_deletes=True
+    )
 
 
 class Log(Base):
