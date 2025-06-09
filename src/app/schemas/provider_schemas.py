@@ -106,7 +106,7 @@ class ProviderDetailsResponse(BaseModel):
     )
     name: str = Field(..., example="Report Builder")
     status: StatusEnum = Field(..., example="active")
-    user_id: UUID4 = Field(
+    owner_id: UUID4 = Field(
         default_factory=uuid.uuid4, example="96e5fed6-9507-486b-8903-7d449bceac46"
     )
     comment: str = Field(
@@ -116,6 +116,12 @@ class ProviderDetailsResponse(BaseModel):
     created_at: datetime = Field(..., example="2025-05-09 18:38:02.001 +0530")
     updated_at: Optional[datetime] = Field(
         default=None, example="2025-05-09 20:38:10.059 +0530"
+    )
+    created_by: UUID4 = Field(
+        default_factory=uuid.uuid4, example="96e5fed6-9507-486b-8903-7d449bceac46"
+    )
+    updated_by: Optional[UUID4] = Field(
+        default_factory=uuid.uuid4, example="96e5fed6-9507-486b-8903-7d449bceac46"
     )
 
     class Config:
@@ -147,7 +153,7 @@ class ProviderUpdateRequest(BaseModel):
     name: Optional[str] = Field(None, example="Reports and Insights")
     status: Optional[str] = Field(None, example="active")
     comment: Optional[str] = Field(None, example="New comment for the provider.")
-    user_id: Optional[UUID4] = Field(
+    owner_id: Optional[UUID4] = Field(
         None, example="817d5459-a5e3-46af-b5fb-22899c530e09"
     )
 

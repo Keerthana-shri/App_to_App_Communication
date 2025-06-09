@@ -135,7 +135,7 @@ class Application(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    updated_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    updated_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
 
     owner = relationship(
         "User",

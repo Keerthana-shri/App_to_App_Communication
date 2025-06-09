@@ -1,15 +1,17 @@
 from datetime import datetime, timedelta, timezone
 
-from fastapi import HTTPException
+from fastapi import Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import ExpiredSignatureError, JWTError, jwt
 from passlib.context import CryptContext
 
 from src.app.config.settings import app_config
 from src.app.schemas.auth_schemas import (
+    TokenInfo,
     UserLoginInput,
     UserLoginOutput,
     UserRegisterRequest,
-    UserRegisterResponse
+    UserRegisterResponse,
 )
 from src.app.services.unit_of_work import UnitOfWork
 
@@ -71,7 +73,7 @@ class AuthService:
         except JWTError as exc:
             raise HTTPException(status_code=401, detail="Invalid token.") from exc
 
-    def register(self, data: UserRegisterRequest) -> UserRegisterResponse: 
+    def register(self, data: UserRegisterRequest) -> UserRegisterResponse:
         """
         Registers a new user.
 
@@ -98,3 +100,41 @@ class AuthService:
                 data={"user_id": str(user.id), "email": user.email, "name": user.name}
             )
             return UserLoginOutput(access_token=access_token, token_type="Bearer")
+
+    def get_current_user(
+        self,
+        token: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
+    ) -> TokenInfo:
+        """
+        Retrieve the current authenticated user from the token.
+
+        Parameters:
+        ----------
+        token : str (authorization token)
+
+        Returns: UserRegisterResponse (authenticated user's details)
+
+        Raises: HTTPException
+            If the token is invalid or expired.
+        """
+        if not token:
+            raise HTTPException(
+                status_code=401, detail="Authorization Header Not Provided"
+            )
+
+        try:
+            decoded_token = jwt.decode(
+                token.credentials,
+                app_config["SECRET_KEY"],
+                algorithms=app_config["ALGORITHM"],
+            )
+        except ExpiredSignatureError:
+            raise HTTPException(status_code=403, detail="Access Token Has Expired")
+        except JWTError:
+            raise HTTPException(status_code=500, detail="Invalid Token")
+
+        return TokenInfo(
+            id=decoded_token["user_id"],
+            email=decoded_token["email"],
+            name=decoded_token["name"],
+        )
