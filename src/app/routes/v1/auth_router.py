@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from src.app.schemas.auth_schemas import (
+    TokenInfo,
     UserLoginInput,
     UserLoginOutput,
     UserRegisterRequest,
@@ -10,10 +11,11 @@ from src.app.schemas.auth_schemas import (
 from src.app.services.auth_services import AuthService
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+auth_service = AuthService()
 
 
 @router.post("/register", status_code=201, response_model=UserRegisterResponse)
-def register(register_data: UserRegisterRequest, services=Depends(AuthService)):
+def register(register_data: UserRegisterRequest):
     """
     **User Registration endpoint**
 
@@ -31,11 +33,11 @@ def register(register_data: UserRegisterRequest, services=Depends(AuthService)):
 
         HTTPException: If the registration data is invalid or if an error occurs during the registration process.
     """
-    return services.register(data=register_data)
+    return auth_service.register(data=register_data)
 
 
 @router.post("/login", response_model=UserLoginOutput)
-def login(register_data: UserLoginInput, services=Depends(AuthService)):
+def login(register_data: UserLoginInput):
     """
     **User Login endpoint**
 
@@ -53,13 +55,13 @@ def login(register_data: UserLoginInput, services=Depends(AuthService)):
 
         HTTPException: If the login credentials are invalid or if an error occurs during the login process.
     """
-    return services.login(login_data=register_data)
+    return auth_service.login(login_data=register_data)
 
 
 @router.post("/refresh", response_model=UserLoginOutput)
 def refresh(
     token: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
-    services=Depends(AuthService),
+    current_user: UserRegisterResponse = Depends(auth_service.get_current_user),
 ):
     """
     **Refreshes the access token using the provided token.**
@@ -78,4 +80,22 @@ def refresh(
 
         HTTPException: If the refresh token is invalid or expired.
     """
-    return services.refresh_token(token=token.credentials)
+    return auth_service.refresh_token(token=token.credentials)
+
+
+@router.get("/me", response_model=TokenInfo)
+def me(current_user: UserRegisterResponse = Depends(auth_service.get_current_user)):
+    """
+    **Returns the current authenticated user.**
+
+    This endpoint retrieves the details of the currently authenticated user.
+
+    **Parameters:**
+
+        current_user (UserRegisterResponse): The current authenticated user.
+
+    **Returns:**
+
+        TokenInfo: The details of the current user, including their ID, email, and name.
+    """
+    return current_user

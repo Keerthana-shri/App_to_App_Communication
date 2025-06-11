@@ -1,6 +1,3 @@
-from contextlib import asynccontextmanager
-
-from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 
@@ -8,30 +5,8 @@ from src.app.routes import api
 from src.app.services.api_key_service import APIKeyService
 from src.app.services.unit_of_work import UnitOfWork
 
-scheduler = BackgroundScheduler()
 service = APIKeyService(uow=UnitOfWork())
-scheduler.add_job(service.rotate_api_keys, "interval", days=3)
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """
-    Manages the lifespan of the FastAPI application.
-
-    Starts the background scheduler when the application starts and shuts it down when the application stops.
-
-    Args:
-        app (FastAPI): The FastAPI application instance.
-
-    Yields:
-        None
-    """
-    scheduler.start()
-    yield
-    scheduler.shutdown()
-
-
-app = FastAPI(lifespan=lifespan)
+app = FastAPI()
 
 
 def custom_openapi():
@@ -62,7 +37,9 @@ def custom_openapi():
         for method, details in methods.items():
             if path.startswith("/api/v1/application") and "/consumer" not in path:
                 details["security"] = [{"BearerAuth": []}]
-            elif path.startswith("/auth/refresh"):
+            elif path.startswith("/api/v1/auth/refresh") or path.startswith(
+                "/api/v1/auth/me"
+            ):
                 details["security"] = [{"BearerAuth": []}]
             elif "/consumer" in path:
                 details["security"] = [{"ApiKeyAuth": []}]
@@ -72,5 +49,4 @@ def custom_openapi():
 
 
 app.openapi = custom_openapi
-
 app.include_router(api.router)
