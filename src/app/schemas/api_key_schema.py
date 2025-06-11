@@ -1,5 +1,4 @@
-import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
@@ -7,84 +6,141 @@ from pydantic import UUID4, BaseModel, Field
 
 
 class AppType(str, Enum):
+    """
+    Enum representing the type of application.
+
+    Attributes:
+        provider (str): Represents a provider application.
+        consumer (str): Represents a consumer application.
+    """
+
     provider = "provider"
     consumer = "consumer"
 
 
 class PermissionEnum(str, Enum):
+    """
+    Enum representing the permissions for an API key.
+
+    Attributes:
+        read (str): Read-only permission.
+        write (str): Write-only permission.
+        both (str): Both read and write permissions.
+    """
+
     read = "read"
     write = "write"
     both = "both"
 
 
 class StatusEnum(str, Enum):
+    """
+    Enum representing the status of an API key.
+
+    Attributes:
+        active (str): The API key is active.
+        inactive (str): The API key is inactive.
+        revoked (str): The API key has been revoked.
+    """
+
     active = "active"
     inactive = "inactive"
     revoked = "revoked"
 
 
 class APIKeyCreate(BaseModel):
-    provider_id: UUID4 = Field(example="40d46134-a885-4e17-91ce-0be66ce832ff")
-    secret_hash: str = Field(example="8fdf8419-99e1-423e-947d-3513c1a02d92")
-    api_key_owner_id: UUID4 = Field(example="37c5d3af-30e2-41d2-9dc2-b2878d4a0ca4")
-    permissions: PermissionEnum = Field(example="read")
-    expires_at: datetime = Field(
-        example=(datetime.now(timezone.utc) + timedelta(days=3)).isoformat()
-    )
-    comment: str = Field(example="This is a sample API key.")
+    """
+    Schema for creating an API key.
 
+    Attributes:
+        permissions (PermissionEnum): The permissions for the API key.
+        expires_at (datetime): The expiration date of the API key.
+        comment (Optional[str]): A comment or note about the API key.
+        api_key_owner_id (UUID4): The ID of the user who owns the API key.
+        created_by (Optional[UUID4]): The ID of the user who created the API key.
+        updated_by (Optional[UUID4]): The ID of the user who last updated the API key.
+    """
 
-class APIKeyUpdate(BaseModel):
-    status: Optional[StatusEnum] = Field(None, example="active")
-    permissions: Optional[PermissionEnum] = Field(None, example="read")
-    expires_at: Optional[datetime] = Field(
-        None, example=(datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
-    )
-    comment: Optional[str] = Field(None, example="Updated this value.")
+    permissions: PermissionEnum
+    expires_at: datetime
+    comment: Optional[str] = None
+    api_key_owner_id: UUID4
+    created_by: Optional[UUID4] = None
+    updated_by: Optional[UUID4] = None
 
 
 class Response(BaseModel):
     """
-    Schema for provider registration response.
+    Generic response schema.
 
     Attributes:
-        message (str): Confirmation message indicating request processed successfully"
+        message (str): A message describing the result of the operation.
     """
 
     message: str = Field(example="API key updated successfully.")
 
 
 class APIKeyResponse(BaseModel):
-    message: str = Field(default="API key generated")
-    api_key: str = Field(
-        example="gAAAAABoJJIhIatLEuL9WRKLnWWRhDTXzzf9CI2J6-cY07qWQ9bYfUAB37C-G5NlcrJLH1ewIDKqKFqEptkUQ9brKl_X66-XKofrttbpK5hUt_mMHhKcygYz5d3dbYr1Y6F9toGKasSp"
-    )
+    """
+    Schema for the response when an API key is generated.
+
+    Attributes:
+        message (str): A message describing the result of the operation.
+        api_key (str): The generated API key.
+        status (StatusEnum): The status of the API key.
+    """
+
+    message: str = "API key generated"
+    api_key: str
     status: StatusEnum
 
 
 class APIKeyDetailResponse(BaseModel):
-    id: UUID4 = Field(example=uuid.uuid4())
-    provider_id: UUID4 = Field(example="40d46134-a885-4e17-91ce-0be66ce832ff")
-    consumer_id: UUID4 = Field(example="b9fd40b8-07a3-45dc-a253-e34d7d5dd73b")
-    api_key: str = Field(
-        example="gAAAAABoJJIhIatLEuL9WRKLnWWRhDTXzzf9CI2J6-cY07qWQ9bYfUAB37C-G5NlcrJLH1ewIDKqKFqEptkUQ9brKl_X66-XKofrttbpK5hUt_mMHhKcygYz5d3dbYr1Y6F9toGKasSp"
-    )
-    api_key_owner_id: UUID4 = Field(example="37c5d3af-30e2-41d2-9dc2-b2878d4a0ca4")
+    """
+    Schema for detailed information about an API key.
+
+    Attributes:
+        id (UUID4): The unique identifier of the API key.
+        provider_id (UUID4): The ID of the provider application.
+        consumer_id (UUID4): The ID of the consumer application.
+        api_key_owner_id (UUID4): The ID of the user who owns the API key.
+        permissions (PermissionEnum): The permissions for the API key.
+        expires_at (datetime): The expiration date of the API key.
+        comment (Optional[str]): A comment or note about the API key.
+        status (Optional[StatusEnum]): The status of the API key.
+        created_at (datetime): The timestamp when the API key was created.
+        updated_at (Optional[datetime]): The timestamp when the API key was last updated.
+        created_by (Optional[UUID4]): The ID of the user who created the API key.
+        updated_by (Optional[UUID4]): The ID of the user who last updated the API key.
+    """
+
+    id: UUID4
+    provider_id: UUID4
+    consumer_id: UUID4
+    api_key_owner_id: UUID4
     permissions: PermissionEnum
-    expires_at: datetime = Field(
-        example=(datetime.now(timezone.utc) + timedelta(days=3)).isoformat()
-    )
-    comment: str = Field(example="This is a sample API key.")
-    status: StatusEnum
-    created_at: datetime = Field(
-        example=(datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
-    )
-    updated_at: Optional[datetime] = Field(
-        example=(datetime.now(timezone.utc) + timedelta(days=2)).isoformat()
-    )
+    expires_at: datetime
+    comment: Optional[str]
+    status: Optional[StatusEnum] = None
+    created_at: datetime
+    updated_at: Optional[datetime]
+    created_by: Optional[UUID4] = None
+    updated_by: Optional[UUID4] = None
 
 
 class APIKeyListResponse(BaseModel):
+    """
+    Schema for a paginated list of API keys.
+
+    Attributes:
+        total_pages (int): The total number of pages.
+        previous_page (Optional[int]): The previous page number, if available.
+        current_page (int): The current page number.
+        next_page (Optional[int]): The next page number, if available.
+        page_size (int): The number of items per page.
+        items (List[APIKeyDetailResponse]): The list of API key details.
+    """
+
     total_pages: int = Field(example=1)
     previous_page: Optional[int] = Field(example="null")
     current_page: int = Field(example=1)

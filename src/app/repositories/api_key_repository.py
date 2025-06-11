@@ -25,7 +25,12 @@ class APIKeyRepository:
         self.session = session
 
     def get_all(
-        self, page: int = 1, page_size: int = 10, filters: dict = None
+        self,
+        page: int = 1,
+        page_size: int = 10,
+        filters: dict = None,
+        sort_by="created_at",
+        order_by="asc",
     ) -> Tuple[List[Consumer], int]:
         """
         Retrieves all API keys with pagination and optional filters.
@@ -34,16 +39,25 @@ class APIKeyRepository:
             page (int): Page number for pagination. Defaults to 1.
             page_size (int): Number of items per page. Defaults to 10.
             filters (dict): Optional filters for querying API keys.
+            sort_by (str): Column name to sort results. Defaults to "created_at".
+            order_by (str): Sorting order ("asc" or "desc"). Defaults to "asc".
 
         Returns:
             Tuple[List[Consumer], int]: A tuple containing a list of API keys and the total count.
         """
+
         skip = (page - 1) * page_size
         query = self.session.query(Consumer)
 
         if filters:
             for attr, value in filters.items():
                 query = query.filter(getattr(Consumer, attr) == value)
+
+        if hasattr(Consumer, sort_by):
+            sort_column = getattr(Consumer, sort_by)
+            query = query.order_by(
+                sort_column.asc() if order_by == "asc" else sort_column.desc()
+            )
 
         total = query.count()
         api_keys = query.offset(skip).limit(page_size).all()
@@ -52,7 +66,6 @@ class APIKeyRepository:
     def get(
         self,
         id: Optional[UUID] = None,
-        api_key: Optional[str] = None,
         provider_id: Optional[UUID] = None,
         consumer_id: Optional[UUID] = None,
     ) -> Optional[Consumer]:
@@ -62,6 +75,7 @@ class APIKeyRepository:
         Args:
             id (Optional[UUID]): The unique identifier of the API key.
             provider_id (Optional[UUID]): The unique identifier of the provider.
+            consumer_id (Optional[UUID]): The unique identifier of the consumer.
 
         Returns:
             Optional[Consumer]: The Consumer object if found, otherwise None.
@@ -69,6 +83,8 @@ class APIKeyRepository:
         query = self.session.query(Consumer)
         if id:
             query = query.filter(Consumer.id == id)
+        if consumer_id:
+            query = query.filter(Consumer.consumer_id == consumer_id)
         if provider_id:
             query = query.filter(Consumer.provider_id == provider_id)
         return query.first()
@@ -99,6 +115,8 @@ class APIKeyRepository:
                 "comment",
                 "api_key",
                 "updated_at",
+                "created_by",
+                "updated_by",
             }
             for key, value in kwargs.items():
                 if key in allowed_fields:

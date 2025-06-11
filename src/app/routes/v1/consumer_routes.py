@@ -1,221 +1,148 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi import APIRouter, Depends, Header, Query
 
-import src.app.services.consumer_services as consumer_services
-from src.app.schemas.consumer_schemas import (
-    ApiKeyRequest,
-    ApiKeyResponse,
-    ConsumerDetailsResponse,
-    ConsumerRegisterRequest,
-    ConsumerUpdateRequest,
-    OrderEnum,
-    PaginatedResponse,
-    Response,
-    SortByEnum,
+from src.app.schemas.api_key_schema import (
+    APIKeyCreate,
+    APIKeyDetailResponse,
+    APIKeyListResponse,
+    APIKeyResponse,
 )
-from src.app.services.unit_of_work import UnitOfWork
+from src.app.services.consumer_services import ConsumerService
 
-router = APIRouter(tags=["Consumer"])
+router = APIRouter(prefix="/api/v1/application", tags=["Consumer"])
 
 
-@router.post("/consumers", response_model=Response, status_code=201)
-def register_consumer(
-    data: ConsumerRegisterRequest,
-    token: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
+@router.post("/{provider_id}/consumer/{consumer_id}", status_code=201)
+def create_consumer_relationship(
+    provider_id: UUID,
+    consumer_id: UUID,
+    data: APIKeyCreate,
+    x_api_key: str = Header(..., alias="x-api-key"),
+    service: ConsumerService = Depends(ConsumerService),
 ):
-    """**Registers a consumer application.**
-
-    This endpoint handles the registration of a consumer application. It validates the provided application details, ensures no duplicate registration, and securely stores relevant information.
-
-    **Args**:
-
-        data (ConsumerRegisterRequest):
-            The request payload containing application details.
-
-    **Returns**:
-
-        ConsumerRegisterResponse:
-            The response confirming successful registration.
-
-    **Raises**:
-
-        HTTPException:
-            If validation fails or the application is already registered.
     """
+    Creates a relationship between a provider and a consumer.
 
-    unit_of_work = UnitOfWork()
-    return consumer_services.register_consumer(
-        unit_of_work=unit_of_work,
+    Args:
+        provider_id (UUID): The ID of the provider application.
+        consumer_id (UUID): The ID of the consumer application.
+        data (APIKeyCreate): The API key creation details.
+        x_api_key (str): The API key for authentication.
+        service (ConsumerService): The consumer service dependency.
+
+    Returns:
+        dict: A dictionary containing the details of the created relationship.
+
+    Raises:
+        HTTPException: If the relationship creation fails.
+    """
+    return service.create_relationship(
+        provider_id=provider_id,
+        consumer_id=consumer_id,
         data=data,
+        x_api_key=x_api_key,
+        current_user_id=data.api_key_owner_id,
     )
 
 
-@router.get("/consumers", response_model=PaginatedResponse)
-def get_all_consumers(
-    page: int = Query(1, ge=1),
-    page_size: int = Query(10, ge=5, le=100),
-    sort_by: SortByEnum = Query(SortByEnum.created_at),
-    order: OrderEnum = Query(OrderEnum.asc),
-    token: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
+@router.get(
+    "/{provider_id}/consumer/{consumer_id}/token", response_model=APIKeyResponse
+)
+def generate_consumer_token(
+    provider_id: UUID,
+    consumer_id: UUID,
+    x_api_key: str = Header(..., alias="x-api-key"),
+    service: ConsumerService = Depends(ConsumerService),
 ):
     """
-    **Retrieve a paginated list of consumers.**
+    Generates a token for a consumer application.
 
-    This endpoint returns a list of consumers with optional pagination, sorting, and ordering.
+    Args:
+        provider_id (UUID): The ID of the provider application.
+        consumer_id (UUID): The ID of the consumer application.
+        x_api_key (str): The API key for authentication.
+        service (ConsumerService): The consumer service dependency.
 
-    **Parameters**:
-    - page (int): Page number for pagination (default: 1, must be >= 1).
-    - page_size (int): Number of consumers per page (default: 10, must be between 5 and 100).
-    - sort_by (SortByEnum): Field used for sorting consumers (default: created_at).
-    - order (OrderEnum): Sorting order, either ascending or descending (default: ascending).
+    Returns:
+        APIKeyResponse: The generated token details.
 
-    **Returns**:
-    - PaginatedResponse: A structured response containing consumer data.
+    Raises:
+        HTTPException: If token generation fails.
     """
-    unit_of_work = UnitOfWork()
+    return service.generate_token(
+        provider_id=provider_id,
+        consumer_id=consumer_id,
+        x_api_key=x_api_key,
+    )
 
-    return consumer_services.get_all_consumers(
-        unit_of_work=unit_of_work,
+
+@router.get(
+    "/{provider_id}/consumer/{consumer_id}", response_model=APIKeyDetailResponse
+)
+def get_consumer_by_id(
+    provider_id: UUID,
+    consumer_id: UUID,
+    x_api_key: str = Header(..., alias="x-api-key"),
+    service: ConsumerService = Depends(ConsumerService),
+):
+    """
+    Retrieves details of a consumer application by its ID.
+
+    Args:
+        provider_id (UUID): The ID of the provider application.
+        consumer_id (UUID): The ID of the consumer application.
+        x_api_key (str): The API key for authentication.
+        service (ConsumerService): The consumer service dependency.
+
+    Returns:
+        APIKeyDetailResponse: The consumer application details.
+
+    Raises:
+        HTTPException: If the consumer application is not found.
+    """
+    return service.get_consumer(
+        provider_id=provider_id,
+        consumer_id=consumer_id,
+        x_api_key=x_api_key,
+    )
+
+
+@router.get("/{provider_id}/consumer/", response_model=APIKeyListResponse)
+def get_all_consumers_for_provider(
+    provider_id: UUID,
+    x_api_key: str = Header(..., alias="x-api-key"),
+    page: int = 1,
+    page_size: int = 10,
+    sort_by: str = Query(
+        "created_at", enum=["name", "status", "created_at", "updated_at"]
+    ),
+    order: str = Query("asc", enum=["asc", "desc"]),
+    service: ConsumerService = Depends(ConsumerService),
+):
+    """
+    Retrieves all consumers for a provider application with pagination.
+
+    Args:
+        provider_id (UUID): The ID of the provider application.
+        x_api_key (str): The API key for authentication.
+        page (int): The page number for pagination. Defaults to 1.
+        page_size (int): The number of items per page. Defaults to 10.
+        sort_by (str): The field to sort by. Defaults to "created_at".
+        order (str): The sort order ("asc" or "desc"). Defaults to "asc".
+        service (ConsumerService): The consumer service dependency.
+
+    Returns:
+        APIKeyListResponse: A response object containing the list of consumers and pagination details.
+
+    Raises:
+        HTTPException: If the retrieval fails.
+    """
+    return service.get_all_consumers(
+        provider_id=provider_id,
+        x_api_key=x_api_key,
         page=page,
         page_size=page_size,
-        sort_by=sort_by.value,
-        order=order.value,
-    )
-
-
-@router.get("/consumers/{consumer_id}", response_model=ConsumerDetailsResponse)
-def get_consumer(
-    consumer_id: UUID, token: HTTPAuthorizationCredentials = Depends(HTTPBearer())
-):
-    """
-    **Fetches details of a registered consumer application.**
-
-    This endpoint retrieves the details of a specific consumer application using its unique identifier.
-
-    **Args**:
-
-        consumer_id (UUID):
-            The unique identifier of the consumer application.
-
-    **Returns**:
-
-        ConsumerResponse:
-            The details of the requested consumer application.
-
-    **Raises**:
-
-        HTTPException:
-            If the consumer application is not found.
-    """
-
-    unit_of_work = UnitOfWork()
-
-    return consumer_services.get_consumer_by_id(
-        unit_of_work=unit_of_work,
-        consumer_id=consumer_id,
-    )
-
-
-@router.post("/consumers/{consumer_id}/get-api", response_model=ApiKeyResponse)
-def get_api_key(
-    consumer_id: UUID,
-    data: ApiKeyRequest,
-    token: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
-):
-    """
-    **Fetches the API key for a registered consumer application.**
-
-    This endpoint retrieves the API key associated with a specific consumer application using its unique identifier.
-
-    **Args**:
-
-        consumer_id (UUID):
-            The unique identifier of the consumer application.
-
-        data (ApiKeyRequest):
-            The request payload containing the application secret and provider ID.
-
-    **Returns**:
-
-        ApiKeyResponse:
-            The API key of the requested consumer application.
-
-    **Raises**:
-
-        HTTPException:
-            If the consumer application is not found.
-    """
-
-    unit_of_work = UnitOfWork()
-
-    return consumer_services.get_api_key(
-        unit_of_work=unit_of_work,
-        consumer_id=consumer_id,
-        data=data,
-    )
-
-
-@router.patch("/consumers/{consumer_id}", response_model=Response)
-def patch_consumer(
-    consumer_id: UUID,
-    data: ConsumerUpdateRequest,
-    token: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
-):
-    """
-    **Updates the details of a registered consumer application.**
-
-    This endpoint allows for partial updates to the details of a specific consumer application.
-
-    **Args**:
-
-        consumer_id (UUID):
-            The unique identifier of the consumer application.
-
-        data (ConsumerUpdateRequest):
-            The request payload containing updated application details.
-
-    **Returns**:
-
-        ConsumerResponse:
-            The updated details of the consumer application.
-
-    **Raises**:
-
-        HTTPException:
-            If the consumer application is not found or if validation fails.
-    """
-    unit_of_work = UnitOfWork()
-
-    return consumer_services.update_consumer(
-        unit_of_work=unit_of_work,
-        consumer_id=consumer_id,
-        data=data,
-    )
-
-
-@router.delete("/consumers/{consumer_id}", status_code=204)
-def delete_consumer(
-    consumer_id: UUID, token: HTTPAuthorizationCredentials = Depends(HTTPBearer())
-):
-    """
-    **Deletes a consumer from the database.**
-
-    **Parameters**:
-        consumer_id (UUID):
-            The unique identifier of the consumer to be deleted.
-
-    **Returns**:
-        Response:
-            HTTP 204 No Content if deletion is successful.
-
-    **Raises**:
-        HTTPException 404: If the consumer with the given ID is not found.
-    """
-    unit_of_work = UnitOfWork()
-
-    return consumer_services.delete_consumer(
-        unit_of_work=unit_of_work,
-        consumer_id=consumer_id,
+        sort_by=sort_by,
+        order=order,
     )

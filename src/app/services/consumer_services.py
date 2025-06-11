@@ -1,325 +1,368 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from cryptography.fernet import Fernet
 from fastapi import HTTPException
+from jose import jwt
 
 from src.app.config.settings import app_config
-from src.app.schemas.consumer_schemas import (
-    ApiKeyRequest,
-    ApiKeyResponse,
-    ConsumerDetailsResponse,
-    ConsumerRegisterRequest,
-    ConsumerUpdateRequest,
-    PaginatedResponse,
-    Response,
+from src.app.models.data_models import Consumer, StatusEnum, User
+from src.app.schemas.api_key_schema import (
+    APIKeyCreate,
+    APIKeyDetailResponse,
+    APIKeyListResponse,
+    APIKeyResponse,
 )
-from src.app.services.logging_service import log_activity
 from src.app.services.unit_of_work import UnitOfWork
 
-ENCRYPTION_KEY = app_config["ENCRYPTION_KEY"]
-cipher_suite = Fernet(ENCRYPTION_KEY)
+cipher_suite = Fernet(app_config["ENCRYPTION_KEY"])
 
 
-def register_consumer(unit_of_work: UnitOfWork, data: ConsumerRegisterRequest):
+class ConsumerService:
     """
-    Registers a consumer application in the system.
+    Service class for managing consumer-provider relationships and API keys.
 
-    Args:
-        unit_of_work (UnitOfWork): Database session and repository manager.
-        data (ConsumerRegisterRequest): Incoming request data for consumer registration.
-
-    Raises:
-        HTTPException: If application data is already registered.
-
-    Returns:
-        dict: Confirmation message upon successful registration.
+    Attributes:
+        uow (UnitOfWork): Unit of work for database operations.
     """
 
-    with unit_of_work as uow:
-        # Check if the application is already registerd
-        application = uow.application.get(id=data.application_guid)
+    def __init__(self):
+        """
+        Initializes the ConsumerService with a UnitOfWork instance.
+        """
+        self.uow = UnitOfWork()
 
-        if application:
-            raise HTTPException(
-                status_code=409, detail="The application is already registered."
+    def _validate_consumer_secret(self, consumer_id: UUID, x_api_key: str):
+        """
+        Validates the consumer's secret key.
+
+        Args:
+            consumer_id (UUID): The ID of the consumer application.
+            x_api_key (str): The API key provided for authentication.
+
+        Raises:
+            HTTPException: If the consumer application is not found, the secret cannot be decrypted,
+                           or the API key is invalid.
+        """
+        with self.uow as uow:
+            consumer_app = uow.application.get(id=consumer_id)
+            if not consumer_app:
+                raise HTTPException(
+                    status_code=404, detail="Consumer application not found."
+                )
+
+            try:
+                decrypted_secret = cipher_suite.decrypt(
+                    consumer_app.secret_hash.encode()
+                ).decode()
+            except Exception:
+                raise HTTPException(
+                    status_code=400, detail="Failed to decrypt consumer secret."
+                )
+
+            if decrypted_secret != x_api_key:
+                raise HTTPException(status_code=401, detail="Invalid x-api-key.")
+
+    def _evaluate_status(self, consumer: Consumer) -> StatusEnum:
+        """
+        Evaluates the status of a consumer based on its expiration date.
+
+        Args:
+            consumer (Consumer): The consumer object.
+
+        Returns:
+            StatusEnum: The current status of the consumer.
+        """
+        now = datetime.now(timezone.utc)
+        if consumer.expires_at and consumer.expires_at <= now:
+            return StatusEnum.inactive
+        return StatusEnum.active
+
+    def create_relationship(
+        self,
+        provider_id: UUID,
+        consumer_id: UUID,
+        data: APIKeyCreate,
+        x_api_key: str,
+        current_user_id: UUID,
+    ) -> dict:
+        """
+        Creates a relationship between a provider and a consumer.
+
+        Args:
+            provider_id (UUID): The ID of the provider application.
+            consumer_id (UUID): The ID of the consumer application.
+            data (APIKeyCreate): The API key creation details.
+            x_api_key (str): The API key for authentication.
+            current_user_id (UUID): The ID of the user creating the relationship.
+
+        Returns:
+            dict: A message indicating the result of the operation.
+
+        Raises:
+            HTTPException: If the provider, consumer, or user is invalid, or if the relationship already exists.
+        """
+        self._validate_consumer_secret(consumer_id, x_api_key)
+
+        with self.uow as uow:
+            provider = uow.application.get(id=provider_id)
+            consumer = uow.application.get(id=consumer_id)
+            owner = uow.user.get(id=current_user_id)
+
+            if not owner:
+                raise HTTPException(
+                    status_code=404, detail="Invalid user id (owner_id)."
+                )
+            if not provider:
+                raise HTTPException(status_code=404, detail="Invalid provider_id.")
+            if not consumer:
+                raise HTTPException(status_code=404, detail="Invalid consumer_id.")
+
+            existing = uow.api_key.get(provider_id=provider_id, consumer_id=consumer_id)
+            now = datetime.now(timezone.utc)
+
+            if existing:
+                if existing.status == StatusEnum.active:
+                    raise HTTPException(
+                        status_code=409, detail="Relationship already exists."
+                    )
+
+                new_status = (
+                    StatusEnum.active if data.expires_at > now else StatusEnum.inactive
+                )
+                uow.api_key.update(
+                    id=existing.id,
+                    permissions=data.permissions,
+                    expires_at=data.expires_at,
+                    comment=data.comment,
+                    updated_by=data.updated_by,
+                    status=new_status,
+                )
+                return {"message": "Inactive relationship updated successfully."}
+
+            status = StatusEnum.active if data.expires_at > now else StatusEnum.inactive
+            consumer_record = Consumer(
+                provider_id=provider_id,
+                consumer_id=consumer_id,
+                owner_id=current_user_id,
+                permissions=data.permissions,
+                status=status,
+                expires_at=data.expires_at,
+                comment=data.comment,
+                created_by=data.created_by,
+                updated_by=data.updated_by,
             )
-        
-        user = uow.user.get(id=data.user_id)
-        if not user:
-            raise HTTPException(
-                status_code=404, detail="User not found for the provided user ID."
+            uow.api_key.add(consumer_record)
+
+        return {"message": "Consumer relationship created successfully."}
+
+    def generate_token(
+        self,
+        provider_id: UUID,
+        consumer_id: UUID,
+        x_api_key: str,
+    ) -> APIKeyResponse:
+        """
+        Generates a token for a consumer-provider relationship.
+
+        Args:
+            provider_id (UUID): The ID of the provider application.
+            consumer_id (UUID): The ID of the consumer application.
+            x_api_key (str): The API key for authentication.
+
+        Returns:
+            APIKeyResponse: The generated token details.
+
+        Raises:
+            HTTPException: If the relationship is not found, inactive, or invalid.
+        """
+        self._validate_consumer_secret(consumer_id, x_api_key)
+
+        with self.uow as uow:
+            relationship = uow.api_key.get(
+                provider_id=provider_id, consumer_id=consumer_id
             )
+            if not relationship:
+                raise HTTPException(
+                    status_code=404,
+                    detail="No relationship found between provider and consumer.",
+                )
 
-        # Hash the application secret using bcrypt
-        secret_code = str(data.application_secret)
-        encrypted_secret = cipher_suite.encrypt(secret_code.encode()).decode()
+            current_status = self._evaluate_status(relationship)
+            if current_status != relationship.status:
+                uow.api_key.update(id=relationship.id, status=current_status)
 
-        uow.application.add(
-            id=data.application_guid,
-            name=data.application_name,
-            secret_hash=encrypted_secret,
-            type="consumer",
-            user_id=data.user_id,
-            comment=data.comments,
+            if current_status != StatusEnum.active:
+                raise HTTPException(
+                    status_code=403,
+                    detail="No active relationship found. Please create a new one.",
+                )
+
+            permissions = relationship.permissions.value
+
+        expires_at = datetime.now(timezone.utc) + timedelta(
+            minutes=int(app_config["ACCESS_TOKEN_EXPIRE_MINUTES"])
         )
 
-    with unit_of_work as uow:
-        log_activity(
-            unit_of_work=uow,
-            application_id=data.application_guid,
-            description=f"Consumer application '{data.application_name}' registered with details: {data.dict()}",
+        payload = {
+            "provider_id": str(provider_id),
+            "consumer_id": str(consumer_id),
+            "permissions": permissions,
+            "exp": expires_at,
+        }
+
+        token = jwt.encode(
+            payload, app_config["SECRET_KEY"], algorithm=app_config["ALGORITHM"]
         )
 
-    return {"message": "Application successfully registered."}
+        return APIKeyResponse(api_key=token, status=current_status)
 
+    def get_consumer(
+        self,
+        provider_id: UUID,
+        consumer_id: UUID,
+        x_api_key: str,
+    ) -> APIKeyDetailResponse:
+        """
+        Retrieves details of a consumer application.
 
-def get_all_consumers(
-    unit_of_work: UnitOfWork,
-    page: int = 1,
-    page_size: int = 10,
-    sort_by: str = "created_at",
-    order: str = "asc",
-) -> list[ConsumerDetailsResponse]:
-    """
-    Retrieves paginated consumer applications with sorting.
+        Args:
+            provider_id (UUID): The ID of the provider application.
+            consumer_id (UUID): The ID of the consumer application.
+            x_api_key (str): The API key for authentication.
 
-    Args:
-        unit_of_work (UnitOfWork): Manages database transactions.
-        page (int, optional): Page number for pagination. Defaults to 1.
-        page_size (int, optional): Number of records per page. Defaults to 10.
-        sort_by (str, optional): Field used for sorting. Defaults to "created_at".
-            - Expected values: "name", "status", "created_at", "updated_at"
-        order (str, optional): Sorting order. Defaults to "asc".
-            - Expected values: "asc", "desc"
+        Returns:
+            APIKeyDetailResponse: The consumer application details.
 
-    Returns:
-        list[ConsumerDetailsResponse]: Paginated list of consumer applications.
-            - Includes metadata such as total pages, previous/next pages, and page size.
-    """
-    with unit_of_work as uow:
-        # Fetch all consumer applications
-        consumers = uow.application.get_all(
-            type="consumer", sort_by=sort_by, order=order
-        )
+        Raises:
+            HTTPException: If the consumer is not found or the API key is invalid.
+        """
+        self._validate_consumer_secret(consumer_id, x_api_key)
 
-        formatted_consumers = [
-            ConsumerDetailsResponse(
+        with self.uow as uow:
+            consumer = uow.api_key.get(provider_id=provider_id, consumer_id=consumer_id)
+            if not consumer:
+                raise HTTPException(status_code=404, detail="Consumer not found.")
+
+            current_status = self._evaluate_status(consumer)
+            if current_status != consumer.status:
+                uow.api_key.update(id=consumer.id, status=current_status)
+
+            return APIKeyDetailResponse(
                 id=consumer.id,
-                name=consumer.name,
-                status=consumer.status.value,
-                user_id=consumer.user_id,
+                provider_id=consumer.provider_id,
+                consumer_id=consumer.consumer_id,
+                api_key_owner_id=consumer.owner_id,
+                permissions=consumer.permissions,
+                expires_at=consumer.expires_at,
                 comment=consumer.comment,
+                status=current_status,
                 created_at=consumer.created_at,
                 updated_at=consumer.updated_at,
-            )
-            for consumer in consumers
-        ]
-
-        # Paginate logic
-        total = len(formatted_consumers)
-        start_index = (page - 1) * page_size
-        end_index = start_index + page_size
-        paginated_items = formatted_consumers[start_index:end_index]
-
-        paginated_response = PaginatedResponse(
-            total_pages=(total + page_size - 1) // page_size,
-            previous_page=page - 1 if page > 1 else None,
-            current_page=page,
-            next_page=page + 1 if end_index < total else None,
-            page_size=page_size,
-            items=paginated_items,
-        )
-
-    return paginated_response
-
-
-def get_consumer_by_id(unit_of_work: UnitOfWork, consumer_id: UUID):
-    """
-    Retrieves a consumer application by its unique identifier.
-
-    Args:
-        unit_of_work (UnitOfWork): Database session and repository manager.
-        consumer_id (UUID): Unique identifier of the consumer application.
-
-    Raises:
-        HTTPException: If the consumer application is not found.
-
-    Returns:
-        dict: Details of the requested consumer application.
-    """
-
-    with unit_of_work as uow:
-        # Fetch the consumer application by ID
-        consumer = uow.application.get(id=consumer_id)
-
-        if not consumer:
-            raise HTTPException(
-                status_code=404, detail="Consumer application not found."
+                created_by=consumer.created_by,
+                updated_by=consumer.updated_by,
             )
 
-        # Check if the application is a consumer
-        if consumer.type.value != "consumer":
-            raise HTTPException(
-                status_code=403, detail="Cannot access a non-consumer application."
+    def get_all_consumers(
+        self,
+        provider_id: UUID,
+        x_api_key: str,
+        page: int = 1,
+        page_size: int = 10,
+        sort_by: str = "created_at",
+        order: str = "asc",
+    ) -> APIKeyListResponse:
+        """
+        Retrieves all consumers for a provider application with pagination.
+
+        Args:
+            provider_id (UUID): The ID of the provider application.
+            x_api_key (str): The API key for authentication.
+            page (int): The page number for pagination. Defaults to 1.
+            page_size (int): The number of items per page. Defaults to 10.
+            sort_by (str): The field to sort by. Defaults to "created_at".
+            order (str): The sort order ("asc" or "desc"). Defaults to "asc".
+
+        Returns:
+            APIKeyListResponse: A paginated list of consumer details.
+
+        Raises:
+            HTTPException: If the provider is not found or the API key is invalid.
+        """
+        with self.uow as uow:
+            provider_app = uow.application.get(id=provider_id)
+            if not provider_app:
+                raise HTTPException(
+                    status_code=404, detail="Provider application not found."
+                )
+
+            try:
+                decrypted_secret = cipher_suite.decrypt(
+                    provider_app.secret_hash.encode()
+                ).decode()
+            except Exception:
+                raise HTTPException(
+                    status_code=400, detail="Failed to decrypt provider secret."
+                )
+
+            if decrypted_secret != x_api_key:
+                raise HTTPException(
+                    status_code=401, detail="Invalid x-api-key for provider."
+                )
+
+            consumers, total = uow.api_key.get_all(
+                page=page,
+                page_size=page_size,
+                filters={"provider_id": provider_id},
+                sort_by=sort_by,
+                order_by=order,
             )
 
-        consumer = ConsumerDetailsResponse(
-            id=consumer.id,
-            name=consumer.name,
-            status=consumer.status.value,
-            user_id=consumer.user_id,
-            comment=consumer.comment,
-            created_at=consumer.created_at,
-            updated_at=consumer.updated_at,
-        )
+            items = []
+            for c in consumers:
+                current_status = self._evaluate_status(c)
+                if current_status != c.status:
+                    uow.api_key.update(id=c.id, status=current_status)
 
-    return consumer
+                items.append(
+                    APIKeyDetailResponse(
+                        id=c.id,
+                        provider_id=c.provider_id,
+                        consumer_id=c.consumer_id,
+                        api_key_owner_id=c.owner_id,
+                        permissions=c.permissions,
+                        expires_at=c.expires_at,
+                        comment=c.comment,
+                        status=current_status,
+                        created_at=c.created_at.date(),
+                        updated_at=c.updated_at.date() if c.updated_at else None,
+                        created_by=c.created_by,
+                        updated_by=c.updated_by,
+                    )
+                )
 
-
-def get_api_key(
-    unit_of_work: UnitOfWork, consumer_id: UUID, data: ApiKeyRequest
-) -> ApiKeyResponse:
-    """
-    Retrieves an API key for a consumer application interacting with a provider application.
-
-    Args:
-        unit_of_work (UnitOfWork): The database transaction handler.
-        consumer_id (UUID): The unique identifier of the consumer application.
-        data (ApiKeyRequest): Request body containing the provider ID and application secret.
-
-    Returns:
-        ApiKeyResponse: Contains the API key if validation succeeds.
-
-    Raises:
-        HTTPException: If the consumer application is not found (404).
-        HTTPException: If the application type is not "consumer" (403).
-        HTTPException: If the provided application secret is invalid (403).
-        HTTPException: If the provider application is not found (404).
-        HTTPException: If the provider type is not "provider" (403).
-        HTTPException: If the API key does not exist (404).
-        HTTPException: If the API key is inactive (403).
-        HTTPException: If the API key has been revoked (403).
-    """
-    with unit_of_work as uow:
-        # Fetch the consumer application by ID
-        consumer = uow.application.get(id=consumer_id)
-
-        if not consumer:
-            raise HTTPException(
-                status_code=404, detail="Consumer application not found."
+            total_pages = (total + page_size - 1) // page_size
+            return APIKeyListResponse(
+                total_pages=total_pages,
+                previous_page=page - 1 if page > 1 else None,
+                current_page=page,
+                next_page=page + 1 if page * page_size < total else None,
+                page_size=page_size,
+                items=[
+                    APIKeyDetailResponse(
+                        id=c.id,
+                        provider_id=c.provider_id,
+                        consumer_id=c.consumer_id,
+                        api_key_owner_id=c.owner_id,
+                        permissions=c.permissions,
+                        expires_at=c.expires_at,
+                        comment=c.comment,
+                        status=self._evaluate_status(c),
+                        created_at=c.created_at.date(),
+                        updated_at=c.updated_at.date() if c.updated_at else None,
+                        created_by=c.created_by,
+                        updated_by=c.updated_by,
+                    )
+                    for c in consumers
+                ],
             )
-
-        # Check if the application is a consumer
-        if consumer.type.value != "consumer":
-            raise HTTPException(
-                status_code=403, detail="Cannot access a non-consumer application."
-            )
-
-        if (
-            str(data.application_secret)
-            != cipher_suite.decrypt(consumer.secret_hash).decode()
-        ):
-            raise HTTPException(status_code=403, detail="Invalid application secret.")
-
-        # Check if the provider application exists
-        provider = uow.application.get(id=data.provider_id)
-        if not provider:
-            raise HTTPException(
-                status_code=404, detail="Provider application not found."
-            )
-
-        # Check if the provider application is of type "provider"
-        if provider.type.value != "provider":
-            raise HTTPException(
-                status_code=403,
-                detail="Given provider id is not registered as provider.",
-            )
-
-        api_key_record = uow.api_key.get(
-            consumer_id=consumer.id,
-            provider_id=provider.id,
-        )
-
-        # Check if the API key exists for the given consumer and provider
-        if not api_key_record:
-            raise HTTPException(
-                status_code=404,
-                detail="API key not found for the given consumer and provider.",
-            )
-
-        # Check if the API key is active
-        if api_key_record.status.value == "inactive":
-            raise HTTPException(status_code=403, detail="API key is not active.")
-
-        # Check if the API key is revoked
-        if api_key_record.status.value == "revoked":
-            raise HTTPException(status_code=403, detail="API key has been revoked.")
-
-        api_key = ApiKeyResponse(x_api_key=api_key_record.api_key)
-
-    return api_key
-
-
-def update_consumer(
-    unit_of_work: UnitOfWork, consumer_id: UUID, data: ConsumerUpdateRequest
-) -> Response:
-    """Partially updates consumer details."""
-
-    with unit_of_work as uow:
-        # Fetch the consumer application by ID
-        consumer = uow.application.get(id=consumer_id)
-        if not consumer:
-            raise HTTPException(
-                status_code=404, detail="Consumer application not found."
-            )
-
-        # Check if the application is a consumer
-        if consumer.type.value != "consumer":
-            raise HTTPException(
-                status_code=403, detail="Cannot update a non-consumer application."
-            )
-
-        # Update only fields that are provided
-        update_data = data.model_dump(exclude_unset=True)
-        update_data["updated_at"] = datetime.now(timezone.utc)
-
-        uow.application.update(consumer_id, **update_data)
-
-    with unit_of_work as uow:
-        consumer = uow.application.get(id=consumer_id)
-        log_activity(
-            unit_of_work=uow,
-            application_id=consumer_id,
-            description=f"Consumer application '{consumer.name}' updated with details: {update_data}",
-        )
-
-        return {"message": "Application successfully updated."}
-
-
-def delete_consumer(unit_of_work: UnitOfWork, consumer_id: UUID) -> Response:
-    """Deletes a consumer application."""
-    consumer_name = ""
-    with unit_of_work as uow:
-        # Fetch the consumer application by ID
-        consumer = uow.application.get(id=consumer_id)
-        if not consumer:
-            raise HTTPException(
-                status_code=404, detail="Consumer application not found."
-            )
-
-        # Check if the application is a consumer
-        if consumer.type.value != "consumer":
-            raise HTTPException(
-                status_code=403, detail="Cannot delete a non-consumer application."
-            )
-        consumer_name = str(consumer.name)
-        uow.application.delete(consumer_id)
-
-    with unit_of_work as uow:
-        log_activity(
-            unit_of_work=uow,
-            description=f"Consumer application '{consumer_name}' deleted.",
-        )
-
-        return {"message": "Application successfully deleted."}
