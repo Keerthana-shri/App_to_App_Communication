@@ -1,20 +1,24 @@
-from pydantic import UUID4, BaseModel, Field
+from pydantic import BaseModel, Field
+from typing import Optional
+from uuid import UUID
 
+class TokenValidationRequest(BaseModel):
+    token: str = Field(..., example="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
 
-class ConsumerValidationRequest(BaseModel):
-    consumer_id: UUID4 = Field(..., example="b9fd40b8-07a3-45dc-a253-e34d7d5dd73b")
-    secret_hash: str = Field(..., example="8fdf8419-99e1-423e-947d-3513c1a02d92")
+class TokenValidationResponse(BaseModel):
+    """
+    Schema for custom token claims.
 
+    Attributes:
+        is_valid (bool): Indicates whether the token is valid.
+        provider_id (UUID): The ID of the provider.
+        consumer_id (UUID): The ID of the consumer.
+        permissions (str): The permissions assigned to the token.
+        expiration (Optional[str]): The expiration time of the token, if any.
+    """
+    is_valid: bool
+    provider_id: UUID
+    consumer_id: UUID
+    permissions: str
+    
 
-class ProviderValidationRequest(BaseModel):
-    provider_id: UUID4 = Field(..., example="40d46134-a885-4e17-91ce-0be66ce832ff")
-    secret_hash: str = Field(..., example="62f1a7e2-b1e7-4648-827c-0367aa3ed0f2")
-
-
-class ApiKeyValidationRequest(BaseModel):
-    api_key: str = Field(
-        ...,
-        example="gAAAAABoN2Sx2PVMeBXutBAIUctRT-gnxHUYUWS4tFpMjVV7NQkRipAA9qkyt45zIRV-CIroLdQLCJqoEqMzeofFba5t9YJUiSVuEYIKVJVa0_HtC0VVqKNqvvx4lhsTXjiTkGXtxhrp",
-    )
-    provider_id: UUID4 = Field(..., example="40d46134-a885-4e17-91ce-0be66ce832ff")
-    secret_hash: str = Field(..., example="62f1a7e2-b1e7-4648-827c-0367aa3ed0f2")

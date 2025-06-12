@@ -10,7 +10,7 @@ from src.app.schemas.api_key_schema import (
 )
 from src.app.services.consumer_services import ConsumerService
 
-router = APIRouter(prefix="/api/v1/application", tags=["Consumer"])
+router = APIRouter(prefix="/application", tags=["Consumer"])
 
 
 @router.post("/{provider_id}/consumer/{consumer_id}", status_code=201)
