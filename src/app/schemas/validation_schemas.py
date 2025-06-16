@@ -14,7 +14,6 @@ class TokenValidationResponse(BaseModel):
         provider_id (UUID): The ID of the provider.
         consumer_id (UUID): The ID of the consumer.
         permissions (str): The permissions assigned to the token.
-        expiration (Optional[str]): The expiration time of the token, if any.
     """
     is_valid: bool
     provider_id: UUID
