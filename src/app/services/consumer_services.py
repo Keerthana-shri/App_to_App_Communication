@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
-
+from src.app.services.logging_service import log_activity
 from cryptography.fernet import Fernet
 from fastapi import HTTPException
 from jose import jwt
@@ -153,6 +153,13 @@ class ConsumerService:
                 updated_by=data.updated_by,
             )
             uow.api_key.add(consumer_record)
+
+        with self.uow as uow:
+            log_activity(
+                unit_of_work=uow,
+                application_id=provider_id,
+                description=f"Consumer relationship created between provider {provider_id} and consumer {consumer_id} by user {current_user_id}.",
+            )
 
         return {"message": "Consumer relationship created successfully."}
 
