@@ -22,19 +22,22 @@ def create_consumer_relationship(
     service: ConsumerService = Depends(ConsumerService),
 ):
     """
-    Creates a relationship between a provider and a consumer.
+    **Creates a relationship between a provider and a consumer.**
 
-    Args:
+    **Args:**
+
         provider_id (UUID): The ID of the provider application.
         consumer_id (UUID): The ID of the consumer application.
         data (APIKeyCreate): The API key creation details.
         x_api_key (str): The API key for authentication.
         service (ConsumerService): The consumer service dependency.
 
-    Returns:
+    **Returns:**
+
         dict: A dictionary containing the details of the created relationship.
 
-    Raises:
+    **Raises:**
+
         HTTPException: If the relationship creation fails.
     """
     return service.create_relationship(
@@ -56,18 +59,21 @@ def generate_consumer_token(
     service: ConsumerService = Depends(ConsumerService),
 ):
     """
-    Generates a token for a consumer application.
+    **Generates a token for a consumer application.**
 
-    Args:
+    **Args:**
+
         provider_id (UUID): The ID of the provider application.
         consumer_id (UUID): The ID of the consumer application.
         x_api_key (str): The API key for authentication.
         service (ConsumerService): The consumer service dependency.
 
-    Returns:
+    **Returns:**
+
         APIKeyResponse: The generated token details.
 
-    Raises:
+    **Raises:**
+
         HTTPException: If token generation fails.
     """
     return service.generate_token(
@@ -87,18 +93,21 @@ def get_consumer_by_id(
     service: ConsumerService = Depends(ConsumerService),
 ):
     """
-    Retrieves details of a consumer application by its ID.
+    **Retrieves details of a consumer application by its ID.**
 
-    Args:
+    **Args:**
+
         provider_id (UUID): The ID of the provider application.
         consumer_id (UUID): The ID of the consumer application.
         x_api_key (str): The API key for authentication.
         service (ConsumerService): The consumer service dependency.
 
-    Returns:
+    **Returns:**
+
         APIKeyDetailResponse: The consumer application details.
 
-    Raises:
+    **Raises:**
+
         HTTPException: If the consumer application is not found.
     """
     return service.get_consumer(
@@ -121,9 +130,10 @@ def get_all_consumers_for_provider(
     service: ConsumerService = Depends(ConsumerService),
 ):
     """
-    Retrieves all consumers for a provider application with pagination.
+    **Retrieves all consumers for a provider application with pagination.**
 
-    Args:
+    **Args:**
+
         provider_id (UUID): The ID of the provider application.
         x_api_key (str): The API key for authentication.
         page (int): The page number for pagination. Defaults to 1.
@@ -132,10 +142,12 @@ def get_all_consumers_for_provider(
         order (str): The sort order ("asc" or "desc"). Defaults to "asc".
         service (ConsumerService): The consumer service dependency.
 
-    Returns:
+    **Returns:**
+
         APIKeyListResponse: A response object containing the list of consumers and pagination details.
 
-    Raises:
+    **Raises:**
+
         HTTPException: If the retrieval fails.
     """
     return service.get_all_consumers(
